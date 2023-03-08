@@ -263,6 +263,8 @@ def simulate_policy(
             render=render,
             video_writer=video_writer,
         )
+        if printout:
+            print("Episode rewards:", path['rewards'])
 
         # Log diagnostics if supported by env
         if hasattr(env, "log_diagnostics"):
