@@ -264,7 +264,7 @@ def simulate_policy(
             video_writer=video_writer,
         )
         if printout:
-            print("Episode rewards:", path['rewards'])
+            print("Episode rewards:", np.sum(path['rewards'].flatten()))
 
         # Log diagnostics if supported by env
         if hasattr(env, "log_diagnostics"):
