@@ -63,8 +63,8 @@ if __name__ == "__main__":
     # Setup video recorder if necesssary
     if args.record_video:
         # Grab name of this rollout combo
-        video_name = "{}-{}-{}".format(
-            env_args["env_name"], "".join(env_args["robots"]), env_args["controller"]).replace("_", "-")
+        video_name = "{}-{}-{}-SEED{}".format(
+            env_args["env_name"], "".join(env_args["robots"]), env_args["controller"], env_args["seed"]).replace("_", "-")
         # Calculate appropriate fps
         fps = int(env_args["control_freq"])
         # Define video writer
