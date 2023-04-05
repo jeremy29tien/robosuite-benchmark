@@ -25,7 +25,7 @@
   "expl_environment_kwargs": {
     "control_freq": 20,
     "controller": "OSC_POSITION",
-    "env_name": "Lift",
+    "env_name": "LiftModded",
     "hard_reset": false,
     "horizon": 500,
     "ignore_done": true,
