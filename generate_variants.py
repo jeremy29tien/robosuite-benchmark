@@ -50,5 +50,5 @@ for gt in range(3):
                                   "{}-{}-{}-{}-{}/".format(gt, speed, height, distance_to_bottle, distance_to_cube)
                     if not os.path.exists(output_path):
                         os.makedirs(output_path)
-                    with open(os.path.join(output_path, filename), 'wb') as temp_file:
+                    with open(os.path.join(output_path, filename), 'w') as temp_file:
                         json.dump(template, temp_file)
