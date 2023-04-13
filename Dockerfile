@@ -10,26 +10,33 @@ RUN curl -L https://github.com/peak/s5cmd/releases/download/v2.1.0-beta.1/s5cmd_
 RUN conda install python=3.7.4
 
 # Install python dependencies for robosuite133
-COPY robosuite133/ /code/robosuite133
-WORKDIR /code/robosuite133
+COPY robosuite133/ /code/nl_pref/robosuite133
+WORKDIR /code/nl_pref/robosuite133/
 RUN pip install -e .
 
 # Install python dependencies for robosuite-benchmark
-COPY robosuite-benchmark/ /code/robosuite-benchmark
-WORKDIR /code/robosuite-benchmark
+COPY robosuite-benchmark/ /code/nl_pref/robosuite-benchmark
+WORKDIR /code/nl_pref/robosuite-benchmark/
 RUN pip install -r requirements.txt
 
-COPY rlkit/ /code/rlkit
-WORKDIR /code/rlkit
+COPY rlkit/ /code/nl_pref/rlkit
+WORKDIR /code/nl_pref/rlkit/
 RUN pip install -e .
 
-COPY viskit/ /code/viskit
-WORKDIR /code/viskit
+COPY viskit/ /code/nl_pref/viskit
+WORKDIR /code/nl_pref/viskit/
 RUN pip install -e .
 
-# Install pytorch
-# RUN conda install python=3.10 pytorch torchvision pytorch-cuda=11.7 -c pytorch-nightly -c nvidia && conda clean -a -y
+# Install pytorch and other dependencies
+# TODO: may need to update pytorch to latest version
 RUN conda install -c pytorch pytorch
+RUN apt-get update -q \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    libgl1-mesa-dev \
+    libgl1-mesa-glx \
+    libglew-dev \
+    libosmesa6-dev
+RUN pip install patchelf
 
 # Expose general port
 EXPOSE 3000
@@ -39,7 +46,13 @@ EXPOSE 8888
 ENV TINI_VERSION v0.6.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
 RUN chmod +x /usr/bin/tini
-WORKDIR /code/
+
+WORKDIR /code/nl_pref/
+COPY .mujoco/ /code/nl_pref/.mujoco
+RUN cp -R .mujoco/ /root/
+RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin' >> /root/.bashrc
+
+WORKDIR /code/nl_pref/robosuite-benchmark/
 RUN export PYTHONPATH=.:$PYTHONPATH
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
