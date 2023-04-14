@@ -7,7 +7,7 @@ ENV CXX g++
 # Install s5cmd
 RUN curl -L https://github.com/peak/s5cmd/releases/download/v2.1.0-beta.1/s5cmd_2.1.0-beta.1_Linux-64bit.tar.gz | tar -xz -C /usr/local/bin && s5cmd --help
 # Install python
-RUN conda install python=3.7.4
+RUN conda install python=3.8.0
 
 # Install python dependencies for robosuite133
 COPY robosuite133/ /code/nl_pref/robosuite133
@@ -29,7 +29,7 @@ RUN pip install -e .
 
 # Install pytorch and other dependencies
 # TODO: may need to update pytorch to latest version
-RUN conda install -c pytorch pytorch
+RUN conda install pytorch nomkl
 RUN apt-get update -q \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libgl1-mesa-dev \
