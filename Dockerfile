@@ -38,6 +38,16 @@ RUN apt-get update -q \
     libosmesa6-dev
 RUN pip install patchelf
 
+# Set up stuff for mujoco
+WORKDIR /code/nl_pref/
+COPY .mujoco/ /code/nl_pref/.mujoco
+RUN cp -R .mujoco/ /root/
+RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin' >> /root/.bashrc
+
+# Modify pythonpath for robosuite-benchmark
+WORKDIR /code/nl_pref/robosuite-benchmark/
+RUN export PYTHONPATH=.:$PYTHONPATH
+
 # Expose general port
 EXPOSE 3000
 # Expose port for jupyter
@@ -46,13 +56,5 @@ EXPOSE 8888
 ENV TINI_VERSION v0.6.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
 RUN chmod +x /usr/bin/tini
-
-WORKDIR /code/nl_pref/
-COPY .mujoco/ /code/nl_pref/.mujoco
-RUN cp -R .mujoco/ /root/
-RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin' >> /root/.bashrc
-
-WORKDIR /code/nl_pref/robosuite-benchmark/
-RUN export PYTHONPATH=.:$PYTHONPATH
-
+WORKDIR /code/
 ENTRYPOINT ["/usr/bin/tini", "--"]
