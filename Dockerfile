@@ -46,7 +46,8 @@ RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin' >
 
 # Modify pythonpath for robosuite-benchmark
 WORKDIR /code/nl_pref/robosuite-benchmark/
-RUN export PYTHONPATH=.:$PYTHONPATH
+#RUN export PYTHONPATH=.:$PYTHONPATH
+ENV PYTHONPATH=.:$PYTHONPATH
 
 # Expose general port
 EXPOSE 3000
@@ -58,3 +59,5 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/
 RUN chmod +x /usr/bin/tini
 WORKDIR /code/
 ENTRYPOINT ["/usr/bin/tini", "--"]
+
+WORKDIR /code/nl_pref/robosuite-benchmark/
