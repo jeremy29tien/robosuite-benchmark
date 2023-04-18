@@ -1,8 +1,5 @@
 FROM --platform=linux/amd64 continuumio/miniconda3
 
-# TEMPORARY:
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
-
 SHELL ["conda", "run", "/bin/bash", "-c"]
 # Install system dependencies
 RUN apt update && apt install -y git strace curl vim g++ && rm -rf /var/lib/apt/lists/*
