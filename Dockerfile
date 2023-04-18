@@ -61,4 +61,4 @@ RUN chmod +x /usr/bin/tini
 WORKDIR /code/
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-WORKDIR /code/nl_pref/robosuite-benchmark/
+#WORKDIR /code/nl_pref/robosuite-benchmark/
