@@ -24,4 +24,7 @@ for config in "${configs[@]}"; do
 done
 
 #cd nl_pref/robosuite-benchmark/ && export PYTHONPATH=.:$PYTHONPATH &&
+# ^ NOTE: bash -c wrapper necessary because cd is specifically a bash shell command, not a general executable.
 # ../log/runs/diverse-rewards/$config/
+# ^ NOTE: this should probably work? but we replaced it with writing to a volume
+# NOTE: we needed to use different quotes -- " for the whole command and ' for the command being run by bash.
