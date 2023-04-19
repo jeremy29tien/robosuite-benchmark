@@ -4,6 +4,9 @@ import json
 import numpy as np
 
 
+# nlcomp_file is a json file with the list of comparisons in NL.
+# traj_a_file is a .npy or .npz file with the first trajectory and has a shape of (n_trajectories, n_timesteps, STATE_DIM+ACTION_DIM)
+# traj_b_file is a .npy or .npz file with the second trajectory and has a shape of (n_trajectories, n_timesteps, STATE_DIM+ACTION_DIM)
 class NLTrajComparisonDataset(Dataset):
     def __init__(self, nlcomp_file, traj_a_file, traj_b_file):
         with open(nlcomp_file, 'rb') as f:
