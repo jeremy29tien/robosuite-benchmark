@@ -13,7 +13,7 @@ configs=(0-0-0-0-0  0-0-1-0-2  0-0-2-1-1  0-1-0-2-0  0-1-1-2-2  0-2-0-0-1  0-2-1
 0-0-1-0-1  0-0-2-1-0  0-1-0-1-2  0-1-1-2-1  0-2-0-0-0  0-2-1-0-2  0-2-2-1-1  1-0-0-2-0  1-0-1-2-2  1-1-0-0-1  1-1-1-1-0  1-1-2-1-2  1-2-0-2-1  1-2-2-0-0  2-0-0-0-2  2-0-1-1-1  2-0-2-2-0  2-1-0-2-2  2-1-2-0-1  2-2-0-1-0  2-2-1-1-2  2-2-2-2-1)
 
 for config in "${configs[@]}"; do
-    ctl job run --name "jtien-$config-job" --command bash -c "cd nl_pref/robosuite-benchmark/ && python scripts/train.py --variant training_configs/LiftModded-Jaco-OSC-POSITION-SEED251/diverse-rewards/$config/variant.json --seed 251 --log_dir /jtien-data/diverse-rewards/$config/" \
+    ctl job run --name "jtien-$config-job" --command "bash -c 'cd nl_pref/robosuite-benchmark/ && python scripts/train.py --variant training_configs/LiftModded-Jaco-OSC-POSITION-SEED251/diverse-rewards/$config/variant.json --seed 251 --log_dir /jtien-data/diverse-rewards/$config/'" \
                 --container=docker.io/jeremytien/devbox:robosuite-benchmark \
                 --gpu 0 --cpu 8 \
                 --shared-host-dir-mount /code \
