@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 from bert.extract_features import run_bert
+from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 
 STATE_DIM = 64
 ACTION_DIM = 8
@@ -69,7 +70,7 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(data, epochs):
+def train(nlcomp_file, traj_a_file, traj_b_file, epochs):
     #  use gpu if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -83,21 +84,11 @@ def train(data, epochs):
     # mean-squared error loss
     mse = nn.MSELoss()
 
-    # transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-    #
-    # train_dataset = torchvision.datasets.MNIST(
-    #     root="~/torch_datasets", train=True, transform=transform, download=True
-    # )
-    #
-    # test_dataset = torchvision.datasets.MNIST(
-    #     root="~/torch_datasets", train=False, transform=transform, download=True
-    # )
-    #
-    train_dataset = None
+    train_data = NLTrajComparisonDataset(nlcomp_file, traj_a_file, traj_b_file)
     val_dataset = None
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=128, shuffle=True, num_workers=4, pin_memory=True
+        train_data, batch_size=128, shuffle=True  # , num_workers=4, pin_memory=True
     )
 
     val_loader = torch.utils.data.DataLoader(
