@@ -19,7 +19,7 @@ class NLTrajAutoencoder (nn.Module):
             in_features=STATE_DIM+ACTION_DIM, out_features=128
         )
         self.traj_encoder_output_layer = nn.Linear(
-            in_features=128, out_features=128
+            in_features=128, out_features=128  # TODO: can decrease this to 16
         )
         self.traj_decoder_hidden_layer = nn.Linear(
             in_features=128, out_features=128
@@ -33,7 +33,7 @@ class NLTrajAutoencoder (nn.Module):
             in_features=BERT_OUTPUT_DIM, out_features=128
         )
         self.lang_encoder_output_layer = nn.Linear(
-            in_features=128, out_features=128
+            in_features=128, out_features=128  # TODO: decrease this to 16
         )
         self.lang_decoder_output_layer = None  # TODO: implement language decoder later.
 
@@ -46,9 +46,12 @@ class NLTrajAutoencoder (nn.Module):
         # Encode trajectories
         encoded_traj_a = self.traj_encoder_output_layer(torch.relu(self.traj_encoder_hidden_layer(traj_a)))
         encoded_traj_b = self.traj_encoder_output_layer(torch.relu(self.traj_encoder_hidden_layer(traj_b)))
+        # TODO: take the mean over timesteps
 
         # BERT-encode the language
-        bert_output = run_bert(lang)
+        # TODO: Make sure that we use .detach() on bert output.
+        #  e.g.: run_bert(lang).detach()
+        bert_output = run_bert(lang)  # TODO: use the pytorch version of BERT on HuggingFace
         bert_output_words = bert_output[0]['features']
         bert_output_embedding = []
         for word_embedding in bert_output_embedding:
