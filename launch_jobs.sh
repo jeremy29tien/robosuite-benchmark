@@ -19,7 +19,8 @@ for config in "${configs[@]}"; do
                 --shared-host-dir-mount /code \
                 --force-pull \
                 --volume-name ${USER}-home \
-                --volume-mount /${USER}-data
+                --volume-mount /${USER}-data \
+                --high-priority
 done
 
 #cd nl_pref/robosuite-benchmark/ && export PYTHONPATH=.:$PYTHONPATH &&
