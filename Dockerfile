@@ -43,7 +43,8 @@ RUN pip install patchelf
 WORKDIR /code/nl_pref/
 COPY .mujoco/ /code/nl_pref/.mujoco
 RUN cp -R .mujoco/ /root/
-RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin' >> /root/.bashrc
+#RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin' >> /root/.bashrc
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/.mujoco/mujoco210/bin
 
 # Modify pythonpath for robosuite-benchmark
 WORKDIR /code/nl_pref/robosuite-benchmark/
