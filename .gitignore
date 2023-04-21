@@ -1,5 +1,5 @@
-# Custom
-*.csv  # JT: for ignoring big progress.csv files in the logs of trained policies
+# JT: for ignoring big progress.csv files in the logs of trained policies
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
