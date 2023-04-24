@@ -93,8 +93,8 @@ if all_pairs:
                 dataset_comps.append(c)
 
 else:
+    print("GENERATING " + str(dataset_size) + " RANDOM COMPARISONS.")
     for n in range(dataset_size):
-        print("GENERATING "+str(dataset_size)+" RANDOM COMPARISONS.")
         print("GENERATING COMPARISONS FOR n =", n)
         i = 0
         j = 0
