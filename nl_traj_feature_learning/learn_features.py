@@ -9,7 +9,7 @@ import argparse
 import os
 
 STATE_DIM = 64
-ACTION_DIM = 8
+ACTION_DIM = 4  # NOTE: we use OSC_POSITION as our controller
 BERT_OUTPUT_DIM = 768
 
 
