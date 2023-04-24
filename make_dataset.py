@@ -20,7 +20,7 @@ trajectories = []
 trajectory_rewards = []
 for config in os.listdir(policy_dir):
     policy_path = os.path.join(policy_dir, config)
-    if os.path.isdir(policy_path):
+    if os.path.isdir(policy_path) and os.listdir(policy_path):  # Check that policy_path is a directory and that directory is not empty
         observations = np.load(os.path.join(policy_path, "traj_observations.npy"))
         actions = np.load(os.path.join(policy_path, "traj_actions.npy"))
         rewards = np.load(os.path.join(policy_path, "traj_rewards.npy"))
