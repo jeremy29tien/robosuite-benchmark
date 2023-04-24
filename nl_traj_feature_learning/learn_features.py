@@ -94,29 +94,32 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     # mean-squared error loss
     mse = nn.MSELoss()
 
+    print("Loading dataset...")
     dataset = NLTrajComparisonDataset(nlcomp_file, traj_a_file, traj_b_file)
-
     generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
-
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=128, shuffle=True  # , num_workers=4, pin_memory=True
     )
-
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=32, shuffle=False, num_workers=4
     )
 
+    print("Beginning training...")
     for epoch in range(epochs):
         loss = 0
         for train_datapoint in train_loader:
-            # reshape mini-batch data to [N, 784] matrix
-            # load it to the active device
-            train_datapoint = train_datapoint.to(device)
             traj_a, traj_b, lang = train_datapoint
 
+            # load it to the active device
+            traj_a = torch.as_tensor(traj_a, device=device)
+            traj_b = torch.as_tensor(traj_b, device=device)
+            lang = torch.as_tensor(lang, device=device)
+
+            # train_datapoint = train_datapoint.to(device)  # Shouldn't be needed, since already on device
+            train_datapoint = (traj_a, traj_b, lang)
+
             # reset the gradients back to zero
-            # PyTorch accumulates gradients on subsequent backward passes
             optimizer.zero_grad()
 
             # compute reconstructions
@@ -144,6 +147,10 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
         for val_datapoint in val_loader:
             with torch.no_grad():
                 traj_a, traj_b, lang = val_datapoint
+                traj_a = torch.as_tensor(traj_a, device=device)
+                traj_b = torch.as_tensor(traj_b, device=device)
+                lang = torch.as_tensor(lang, device=device)
+                val_datapoint = (traj_a, traj_b, lang)
                 pred = model(val_datapoint)
 
                 encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
