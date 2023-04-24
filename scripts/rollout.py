@@ -8,6 +8,7 @@ import torch
 import imageio
 import os
 import json
+import glob
 
 from signal import signal, SIGINT
 from sys import exit
@@ -39,6 +40,8 @@ if __name__ == "__main__":
 
     # Get path to saved model
     kwargs_fpath = os.path.join(args.load_dir, "variant.json")
+    # The following line allows for wildcards in the path, and picks the first match.
+    kwargs_fpath = glob.glob(kwargs_fpath)[0]
     try:
         with open(kwargs_fpath) as f:
             kwargs = json.load(f)
