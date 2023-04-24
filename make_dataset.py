@@ -10,11 +10,15 @@ parser = argparse.ArgumentParser(description='')
 
 parser.add_argument('--policy-dir', type=str, default='', help='')
 parser.add_argument('--output-dir', type=str, default='', help='')
+parser.add_argument('--dataset-size', type=int, default=1000, help='')
+parser.add_argument('--all-pairs', action="store_true", help='')
 
 args = parser.parse_args()
 
 policy_dir = args.policy_dir
 output_dir = args.output_dir
+dataset_size = args.dataset_size
+all_pairs = args.all_pairs
 
 print("GETTING TRAJECTORY ROLLOUTS...")
 trajectories = []
@@ -42,48 +46,101 @@ dataset_traj_as = []
 dataset_traj_bs = []
 dataset_comps = []
 
-dataset_size = 100000
+if all_pairs:
+    for i in range(0, num_trajectories):
+        print("GENERATING COMPARISONS FOR i =", i)
+        for j in range(i+1, num_trajectories):
+            traj_i = trajectories[i]
+            traj_j = trajectories[j]
+            traj_i_rewards = trajectory_rewards[i]
+            traj_j_rewards = trajectory_rewards[j]
 
-# for i in range(0, num_trajectories):
-for n in range(dataset_size):
-    # print("GENERATING COMPARISONS FOR i =", i)
-    print("GENERATING COMPARISONS FOR n =", n)
-    # for j in range(i+1, num_trajectories):
-    i = 0
-    j = 0
-    while i == j:
-        i = np.random.randint(num_trajectories)
-        j = np.random.randint(num_trajectories)
+            gt_reward_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards,
+                                                                               traj_j_rewards, 'gt_reward')
+            gt_reward_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards,
+                                                                              traj_i_rewards, 'gt_reward')
 
-    traj_i = trajectories[i]
-    traj_j = trajectories[j]
-    traj_i_rewards = trajectory_rewards[i]
-    traj_j_rewards = trajectory_rewards[j]
+            speed_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards,
+                                                                           'speed')
+            speed_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards,
+                                                                          'speed')
 
-    gt_reward_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards, 'gt_reward')
-    gt_reward_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards, 'gt_reward')
+            height_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards,
+                                                                            'height')
+            height_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards,
+                                                                           'height')
 
-    speed_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards, 'speed')
-    speed_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards, 'speed')
+            distance_to_bottle_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards,
+                                                                                        traj_j_rewards,
+                                                                                        'distance_to_bottle')
+            distance_to_bottle_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards,
+                                                                                       traj_i_rewards, 'distance_to_bottle')
 
-    height_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards, 'height')
-    height_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards, 'height')
+            distance_to_cube_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards,
+                                                                                      traj_j_rewards, 'distance_to_cube')
+            distance_to_cube_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards,
+                                                                                     traj_i_rewards, 'distance_to_cube')
 
-    distance_to_bottle_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards, 'distance_to_bottle')
-    distance_to_bottle_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards, 'distance_to_bottle')
+            for c in gt_reward_ordinary_comps + speed_ordinary_comps + height_ordinary_comps + distance_to_bottle_ordinary_comps + distance_to_cube_ordinary_comps:
+                dataset_traj_as.append(traj_i)
+                dataset_traj_bs.append(traj_j)
+                dataset_comps.append(c)
 
-    distance_to_cube_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards, 'distance_to_cube')
-    distance_to_cube_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards, 'distance_to_cube')
+            for c in gt_reward_flipped_comps + speed_flipped_comps + height_flipped_comps + distance_to_bottle_flipped_comps + distance_to_cube_flipped_comps:
+                dataset_traj_as.append(traj_j)
+                dataset_traj_bs.append(traj_i)
+                dataset_comps.append(c)
 
-    for c in gt_reward_ordinary_comps+speed_ordinary_comps+height_ordinary_comps+distance_to_bottle_ordinary_comps+distance_to_cube_ordinary_comps:
-        dataset_traj_as.append(traj_i)
-        dataset_traj_bs.append(traj_j)
-        dataset_comps.append(c)
+else:
+    for n in range(dataset_size):
+        print("GENERATING COMPARISONS FOR n =", n)
+        i = 0
+        j = 0
+        while i == j:
+            i = np.random.randint(num_trajectories)
+            j = np.random.randint(num_trajectories)
 
-    for c in gt_reward_flipped_comps+speed_flipped_comps+height_flipped_comps+distance_to_bottle_flipped_comps+distance_to_cube_flipped_comps:
-        dataset_traj_as.append(traj_j)
-        dataset_traj_bs.append(traj_i)
-        dataset_comps.append(c)
+        traj_i = trajectories[i]
+        traj_j = trajectories[j]
+        traj_i_rewards = trajectory_rewards[i]
+        traj_j_rewards = trajectory_rewards[j]
+
+        gt_reward_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards,
+                                                                           traj_j_rewards, 'gt_reward')
+        gt_reward_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards,
+                                                                          traj_i_rewards, 'gt_reward')
+
+        speed_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards,
+                                                                       'speed')
+        speed_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards,
+                                                                      'speed')
+
+        height_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards,
+                                                                        'height')
+        height_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards,
+                                                                       'height')
+
+        distance_to_bottle_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards,
+                                                                                    traj_j_rewards,
+                                                                                    'distance_to_bottle')
+        distance_to_bottle_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards,
+                                                                                   traj_i_rewards, 'distance_to_bottle')
+
+        distance_to_cube_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards,
+                                                                                  traj_j_rewards, 'distance_to_cube')
+        distance_to_cube_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards,
+                                                                                 traj_i_rewards, 'distance_to_cube')
+
+        for c in gt_reward_ordinary_comps + speed_ordinary_comps + height_ordinary_comps + distance_to_bottle_ordinary_comps + distance_to_cube_ordinary_comps:
+            dataset_traj_as.append(traj_i)
+            dataset_traj_bs.append(traj_j)
+            dataset_comps.append(c)
+
+        for c in gt_reward_flipped_comps + speed_flipped_comps + height_flipped_comps + distance_to_bottle_flipped_comps + distance_to_cube_flipped_comps:
+            dataset_traj_as.append(traj_j)
+            dataset_traj_bs.append(traj_i)
+            dataset_comps.append(c)
+
 
 np.save(os.path.join(output_dir, 'traj_as.npy'), dataset_traj_as)
 np.save(os.path.join(output_dir, 'traj_bs.npy'), dataset_traj_bs)
