@@ -9,10 +9,12 @@ from robosuite.synthetic_comparisons import generate_synthetic_comparisons_comma
 parser = argparse.ArgumentParser(description='')
 
 parser.add_argument('--policy-dir', type=str, default='', help='')
+parser.add_argument('--output-dir', type=str, default='', help='')
 
 args = parser.parse_args()
 
 policy_dir = args.policy_dir
+output_dir = args.output_dir
 
 trajectories = []
 trajectory_rewards = []
@@ -34,6 +36,9 @@ trajectories = np.asarray(trajectories)
 trajectory_rewards = np.asarray(trajectory_rewards)
 num_trajectories = trajectories.shape[0]
 
+dataset_traj_as = []
+dataset_traj_bs = []
+dataset_comps = []
 for i in range(0, num_trajectories):
     for j in range(i+1, num_trajectories):
         traj_i = trajectories[i]
@@ -55,6 +60,21 @@ for i in range(0, num_trajectories):
 
         distance_to_cube_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards, 'distance_to_cube')
         distance_to_cube_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards, 'distance_to_cube')
+
+        for c in gt_reward_ordinary_comps+speed_ordinary_comps+height_ordinary_comps+distance_to_bottle_ordinary_comps+distance_to_cube_ordinary_comps:
+            dataset_traj_as.append(traj_i)
+            dataset_traj_bs.append(traj_j)
+            dataset_comps.append(c)
+
+        for c in gt_reward_flipped_comps+speed_flipped_comps+height_flipped_comps+distance_to_bottle_flipped_comps+distance_to_cube_flipped_comps:
+            dataset_traj_as.append(traj_j)
+            dataset_traj_bs.append(traj_i)
+            dataset_comps.append(c)
+
+np.save(os.path.join(output_dir, 'traj_as.npy'), dataset_traj_as)
+np.save(os.path.join(output_dir, 'traj_bs.npy'), dataset_traj_bs)
+with open(os.path.join(output_dir, 'nlcomps.json'), 'w') as f:
+    json.dump(dataset_comps, f)
 
 
 
