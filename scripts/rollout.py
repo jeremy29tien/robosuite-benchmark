@@ -42,6 +42,8 @@ if __name__ == "__main__":
     kwargs_fpath = os.path.join(args.load_dir, "variant.json")
     # The following line allows for wildcards in the path, and picks the first match.
     kwargs_fpath = glob.glob(kwargs_fpath)[0]
+    model_fpath = os.path.join(args.load_dir, "params.pkl")
+    model_fpath = glob.glob(model_fpath)[0]
     try:
         with open(kwargs_fpath) as f:
             kwargs = json.load(f)
@@ -101,7 +103,7 @@ if __name__ == "__main__":
     # Run rollout
     simulate_policy(
         env=env,
-        model_path=os.path.join(args.load_dir, "params.pkl"),
+        model_path=model_fpath,
         horizon=env_args["horizon"],
         render=not args.record_video,
         video_writer=video_writer,
