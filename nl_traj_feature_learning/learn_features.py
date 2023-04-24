@@ -46,6 +46,7 @@ class NLTrajAutoencoder (nn.Module):
         traj_b = input[1]
         lang = input[2]
 
+        print(traj_a.shape)
         # Encode trajectories
         encoded_traj_a = self.traj_encoder_output_layer(torch.relu(self.traj_encoder_hidden_layer(traj_a)))
         encoded_traj_b = self.traj_encoder_output_layer(torch.relu(self.traj_encoder_hidden_layer(traj_b)))
