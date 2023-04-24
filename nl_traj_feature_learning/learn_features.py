@@ -19,10 +19,10 @@ class NLTrajAutoencoder (nn.Module):
             in_features=STATE_DIM+ACTION_DIM, out_features=128
         )
         self.traj_encoder_output_layer = nn.Linear(
-            in_features=128, out_features=128  # TODO: can decrease this to 16
+            in_features=128, out_features=16
         )
         self.traj_decoder_hidden_layer = nn.Linear(
-            in_features=128, out_features=128
+            in_features=16, out_features=128
         )
         self.traj_decoder_output_layer = nn.Linear(
             in_features=128, out_features=STATE_DIM+ACTION_DIM
@@ -33,11 +33,12 @@ class NLTrajAutoencoder (nn.Module):
             in_features=BERT_OUTPUT_DIM, out_features=128
         )
         self.lang_encoder_output_layer = nn.Linear(
-            in_features=128, out_features=128  # TODO: decrease this to 16
+            in_features=128, out_features=16
         )
         self.lang_decoder_output_layer = None  # TODO: implement language decoder later.
 
     # Input is a tuple with (trajectory_a, trajectory_b, language)
+    # traj_a has shape (n_trajs, n_timesteps, state+action)
     def forward(self, input):
         traj_a = input[0]
         traj_b = input[1]
@@ -46,12 +47,14 @@ class NLTrajAutoencoder (nn.Module):
         # Encode trajectories
         encoded_traj_a = self.traj_encoder_output_layer(torch.relu(self.traj_encoder_hidden_layer(traj_a)))
         encoded_traj_b = self.traj_encoder_output_layer(torch.relu(self.traj_encoder_hidden_layer(traj_b)))
-        # TODO: take the mean over timesteps
+        # Take the mean over timesteps
+        encoded_traj_a = torch.mean(encoded_traj_a, dim=-2)
+        encoded_traj_b = torch.mean(encoded_traj_b, dim=-2)
 
         # BERT-encode the language
         # TODO: Make sure that we use .detach() on bert output.
         #  e.g.: run_bert(lang).detach()
-        bert_output = run_bert(lang)  # TODO: use the pytorch version of BERT on HuggingFace
+        bert_output = run_bert(lang)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
         bert_output_words = bert_output[0]['features']
         bert_output_embedding = []
         for word_embedding in bert_output_embedding:
@@ -100,18 +103,18 @@ def train(nlcomp_file, traj_a_file, traj_b_file, epochs):
 
     for epoch in range(epochs):
         loss = 0
-        for batch_features, _ in train_loader:
+        for train_datapoint in train_loader:
             # reshape mini-batch data to [N, 784] matrix
             # load it to the active device
-            batch_features = batch_features.to(device)
-            traj_a, traj_b, lang = batch_features
+            train_datapoint = train_datapoint.to(device)
+            traj_a, traj_b, lang = train_datapoint
 
             # reset the gradients back to zero
             # PyTorch accumulates gradients on subsequent backward passes
             optimizer.zero_grad()
 
             # compute reconstructions
-            output = model(batch_features)
+            output = model(train_datapoint)
             encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = output
 
             # compute training reconstruction loss
@@ -131,5 +134,20 @@ def train(nlcomp_file, traj_a_file, traj_b_file, epochs):
         # compute the epoch training loss
         loss = loss / len(train_loader)
 
+        val_loss = 0
+        for val_datapoint in val_loader:
+            with torch.no_grad():
+                traj_a, traj_b, lang = val_datapoint
+                pred = model(val_datapoint)
+
+                encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
+                reconstruction_loss = mse(decoded_traj_a, traj_a) + mse(decoded_traj_b, traj_b)
+                distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
+                val_loss += reconstruction_loss + distance_loss
+        val_loss /= len(val_loader)
+
         # display the epoch training loss
-        print("epoch : {}/{}, loss = {:.6f}".format(epoch + 1, epochs, loss))
+        print("epoch : {}/{}, [train] reconstruction_loss = {:.6f}, [train] distance_loss = {:.6f}, [train] loss = {:.6f}, [val] loss = {:.6f}".format(epoch + 1, epochs, reconstruction_loss, distance_loss, loss, val_loss))
+
+    # Don't forget to save the model!
+    torch.save(model, 'model.pth')
