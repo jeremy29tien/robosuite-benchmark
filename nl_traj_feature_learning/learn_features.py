@@ -46,7 +46,6 @@ class NLTrajAutoencoder (nn.Module):
         traj_b = input[1]
         lang = input[2]
 
-        print(traj_a.shape)
         # Encode trajectories
         encoded_traj_a = self.traj_encoder_output_layer(torch.relu(self.traj_encoder_hidden_layer(traj_a)))
         encoded_traj_b = self.traj_encoder_output_layer(torch.relu(self.traj_encoder_hidden_layer(traj_b)))
@@ -113,8 +112,9 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
             traj_a, traj_b, lang = train_datapoint
 
             # load it to the active device
-            traj_a = torch.as_tensor(traj_a, device=device)
-            traj_b = torch.as_tensor(traj_b, device=device)
+            # also cast down (from float64 in np) to float32, since PyTorch's matrices are float32.
+            traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
+            traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
             # lang = torch.as_tensor(lang, device=device)
 
             # train_datapoint = train_datapoint.to(device)  # Shouldn't be needed, since already on device
