@@ -47,6 +47,7 @@ dataset_traj_bs = []
 dataset_comps = []
 
 if all_pairs:
+    print("GENERATING USING ALL-PAIRS METHOD.")
     for i in range(0, num_trajectories):
         print("GENERATING COMPARISONS FOR i =", i)
         for j in range(i+1, num_trajectories):
@@ -93,6 +94,7 @@ if all_pairs:
 
 else:
     for n in range(dataset_size):
+        print("GENERATING "+str(dataset_size)+" RANDOM COMPARISONS.")
         print("GENERATING COMPARISONS FOR n =", n)
         i = 0
         j = 0
