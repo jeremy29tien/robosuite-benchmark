@@ -12,6 +12,7 @@ parser.add_argument('--policy-dir', type=str, default='', help='')
 parser.add_argument('--output-dir', type=str, default='', help='')
 parser.add_argument('--dataset-size', type=int, default=1000, help='')
 parser.add_argument('--all-pairs', action="store_true", help='')
+parser.add_argument('--trajs-per-policy', type=int, default=5, help='')
 
 args = parser.parse_args()
 
@@ -19,6 +20,7 @@ policy_dir = args.policy_dir
 output_dir = args.output_dir
 dataset_size = args.dataset_size
 all_pairs = args.all_pairs
+trajs_per_policy = args.trajs_per_policy
 
 print("GETTING TRAJECTORY ROLLOUTS...")
 trajectories = []
@@ -32,6 +34,10 @@ for config in os.listdir(policy_dir):
         rewards = np.load(os.path.join(policy_path, "traj_rewards.npy"))
         # observations has dimensions (n_trajs, n_timesteps, obs_dimension)
         trajs = np.concatenate((observations, actions), axis=-1)
+
+        # Downsample
+        trajs = trajs[0:trajs_per_policy]
+        rewards = rewards[0:trajs_per_policy]
 
         # NOTE: We use extend rather than append because we don't want to add an
         # additional dimension across the policies.
