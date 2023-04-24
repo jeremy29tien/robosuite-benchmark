@@ -5,6 +5,8 @@ import torch.optim as optim
 import numpy as np
 from bert.extract_features import run_bert
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
+import argparse
+import os
 
 STATE_DIM = 64
 ACTION_DIM = 8
@@ -76,7 +78,7 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(nlcomp_file, traj_a_file, traj_b_file, epochs):
+def train(nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     #  use gpu if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -150,4 +152,19 @@ def train(nlcomp_file, traj_a_file, traj_b_file, epochs):
         print("epoch : {}/{}, [train] reconstruction_loss = {:.6f}, [train] distance_loss = {:.6f}, [train] loss = {:.6f}, [val] loss = {:.6f}".format(epoch + 1, epochs, reconstruction_loss, distance_loss, loss, val_loss))
 
     # Don't forget to save the model!
-    torch.save(model, 'model.pth')
+    torch.save(model, os.path.join(save_dir, 'model.pth'))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='')
+
+    parser.add_argument('--nlcomp-file', type=str, default='', help='')
+    parser.add_argument('--traj-a-file', type=str, default='', help='')
+    parser.add_argument('--traj-b-file', type=str, default='', help='')
+    parser.add_argument('--epochs', type=int, default=100, help='')
+    parser.add_argument('--save-dir', type=str, default='', help='')
+
+    args = parser.parse_args()
+
+    train(args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir)
+
