@@ -68,6 +68,7 @@ class NLTrajAutoencoder (nn.Module):
             bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
             bert_output_embeddings.append(bert_output_embedding)
         bert_output_embeddings = np.asarray(bert_output_embeddings)
+        bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
 
         # Encode the language
         encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
