@@ -42,13 +42,13 @@ dataset_traj_as = []
 dataset_traj_bs = []
 dataset_comps = []
 for i in range(0, num_trajectories):
+    print("GENERATING COMPARISONS FOR i =", i)
     for j in range(i+1, num_trajectories):
         traj_i = trajectories[i]
         traj_j = trajectories[j]
         traj_i_rewards = trajectory_rewards[i]
         traj_j_rewards = trajectory_rewards[j]
 
-        print("GENERATING COMPARISONS FOR", i, j)
         gt_reward_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards, 'gt_reward')
         gt_reward_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards, 'gt_reward')
 
