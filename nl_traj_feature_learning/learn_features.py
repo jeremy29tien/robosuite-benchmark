@@ -78,11 +78,13 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
+def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     #  use gpu if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("device:", device)
 
     # load it to the specified device, either gpu or cpu
+    print("Initializing model and loading to device...")
     model = NLTrajAutoencoder().to(device)
 
     # create an optimizer object
@@ -92,11 +94,13 @@ def train(nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     # mean-squared error loss
     mse = nn.MSELoss()
 
-    train_data = NLTrajComparisonDataset(nlcomp_file, traj_a_file, traj_b_file)
-    val_dataset = None
+    dataset = NLTrajComparisonDataset(nlcomp_file, traj_a_file, traj_b_file)
+
+    generator = torch.Generator().manual_seed(seed)
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
 
     train_loader = torch.utils.data.DataLoader(
-        train_data, batch_size=128, shuffle=True  # , num_workers=4, pin_memory=True
+        train_dataset, batch_size=128, shuffle=True  # , num_workers=4, pin_memory=True
     )
 
     val_loader = torch.utils.data.DataLoader(
@@ -158,6 +162,7 @@ def train(nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
 
+    parser.add_argument('--seed', type=int, default=0, help='')
     parser.add_argument('--nlcomp-file', type=str, default='', help='')
     parser.add_argument('--traj-a-file', type=str, default='', help='')
     parser.add_argument('--traj-b-file', type=str, default='', help='')
@@ -166,5 +171,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train(args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir)
+    train(seed, args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir)
 
