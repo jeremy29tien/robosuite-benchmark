@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
-from bert.extract_features import run_bert
+import bert.extract_features as b
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 import argparse
 import os
@@ -56,7 +56,7 @@ class NLTrajAutoencoder (nn.Module):
         # BERT-encode the language
         # TODO: Make sure that we use .detach() on bert output.
         #  e.g.: run_bert(lang).detach()
-        bert_output = run_bert(lang)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
+        bert_output = b.run_bert(lang)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
         bert_output_words = bert_output[0]['features']
         bert_output_embedding = []
         for word_embedding in bert_output_embedding:
