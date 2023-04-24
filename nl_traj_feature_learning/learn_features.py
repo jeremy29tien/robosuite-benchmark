@@ -56,16 +56,21 @@ class NLTrajAutoencoder (nn.Module):
         # BERT-encode the language
         # TODO: Make sure that we use .detach() on bert output.
         #  e.g.: run_bert(lang).detach()
-        bert_output = b.run_bert(lang)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
-        bert_output_words = bert_output[0]['features']
-        bert_output_embedding = []
-        for word_embedding in bert_output_embedding:
-            bert_output_embedding.append(word_embedding['layers'][0]['values'])
-        # NOTE: We average across timesteps (since BERT produces a per-token embedding).
-        bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
+        # Loop over the batch
+        bert_output_embeddings = []
+        for l in lang:
+            bert_output = b.run_bert(l)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
+            bert_output_words = bert_output[0]['features']
+            bert_output_embedding = []
+            for word_embedding in bert_output_embedding:
+                bert_output_embedding.append(word_embedding['layers'][0]['values'])
+            # NOTE: We average across timesteps (since BERT produces a per-token embedding).
+            bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
+            bert_output_embeddings.append(bert_output_embedding)
+        bert_output_embeddings = np.asarray(bert_output_embeddings)
 
         # Encode the language
-        encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embedding)))
+        encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
 
         # NOTE: traj_a is the reference, traj_b is the updated
         # NOTE: We won't use this distance; we'll compute it during training.
