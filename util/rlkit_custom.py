@@ -197,6 +197,7 @@ class CustomBatchRLAlgorithm(CustomBaseRLAlgorithm, metaclass=abc.ABCMeta):
         self.min_num_steps_before_training = min_num_steps_before_training
 
     def _train(self):
+        # print('LINE 200')
         if self.min_num_steps_before_training > 0:
             init_expl_paths = self.expl_data_collector.collect_new_paths(
                 self.expl_max_path_length,
@@ -206,6 +207,7 @@ class CustomBatchRLAlgorithm(CustomBaseRLAlgorithm, metaclass=abc.ABCMeta):
             self.replay_buffer.add_paths(init_expl_paths)
             self.expl_data_collector.end_epoch(-1)
 
+        # print('LINE 209')
         for epoch in gt.timed_for(
                 range(self._start_epoch, self.num_epochs),
                 save_itrs=True,
@@ -232,6 +234,7 @@ class CustomBatchRLAlgorithm(CustomBaseRLAlgorithm, metaclass=abc.ABCMeta):
                 for _ in range(self.num_trains_per_train_loop):
                     train_data = self.replay_buffer.random_batch(
                         self.batch_size)
+                    # print('LINE 235')
                     self.trainer.train(train_data)
                 gt.stamp('training', unique=False)
                 self.training_mode(False)

@@ -29,7 +29,7 @@ AGENTS = {"SAC", "TD3"}
 
 
 def experiment(variant, agent="SAC"):
-
+    print('BEGIN EXPERIMENT')
     # Make sure agent is a valid choice
     assert agent in AGENTS, "Invalid agent selected. Selected: {}. Valid options: {}".format(agent, AGENTS)
 
@@ -57,7 +57,7 @@ def experiment(variant, agent="SAC"):
     # Create gym-compatible envs
     expl_env = NormalizedBoxEnv(GymWrapper(suites[0]))
     eval_env = NormalizedBoxEnv(GymWrapper(suites[1]))
-
+    print('CREATED BOX ENVS')
     obs_dim = expl_env.observation_space.low.size
     action_dim = eval_env.action_space.low.size
 
@@ -148,7 +148,7 @@ def experiment(variant, agent="SAC"):
         expl_env,
         expl_policy,
     )
-
+    print('TRAINER INSTANTIATED')
     # Define algorithm
     algorithm = CustomTorchBatchRLAlgorithm(
         trainer=trainer,
@@ -160,7 +160,9 @@ def experiment(variant, agent="SAC"):
         **variant['algorithm_kwargs']
     )
     algorithm.to(ptu.device)
+    print('TRAINING')
     algorithm.train()
+    print('FINISHED TRAINING')
 
 
 def evaluate_policy(env_config, model_path, n_eval, printout=False):
