@@ -178,5 +178,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train(seed, args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir)
+    train(args.seed, args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir)
 
