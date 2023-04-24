@@ -99,10 +99,10 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=128, shuffle=True  # , num_workers=4, pin_memory=True
+        train_dataset, batch_size=128, shuffle=True, num_workers=4, pin_memory=True
     )
     val_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=32, shuffle=False  # , num_workers=4
+        val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
     )
 
     print("Beginning training...")
@@ -114,7 +114,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
             # load it to the active device
             traj_a = torch.as_tensor(traj_a, device=device)
             traj_b = torch.as_tensor(traj_b, device=device)
-            lang = torch.as_tensor(lang, device=device)
+            # lang = torch.as_tensor(lang, device=device)
 
             # train_datapoint = train_datapoint.to(device)  # Shouldn't be needed, since already on device
             train_datapoint = (traj_a, traj_b, lang)
