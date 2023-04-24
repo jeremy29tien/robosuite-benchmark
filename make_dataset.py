@@ -16,6 +16,7 @@ args = parser.parse_args()
 policy_dir = args.policy_dir
 output_dir = args.output_dir
 
+print("GETTING TRAJECTORY ROLLOUTS...")
 trajectories = []
 trajectory_rewards = []
 for config in os.listdir(policy_dir):
@@ -35,7 +36,8 @@ for config in os.listdir(policy_dir):
 trajectories = np.asarray(trajectories)
 trajectory_rewards = np.asarray(trajectory_rewards)
 num_trajectories = trajectories.shape[0]
-
+print("NUM_TRAJECTORIES:", num_trajectories)
+print("COMPILING DATASET:")
 dataset_traj_as = []
 dataset_traj_bs = []
 dataset_comps = []
@@ -46,6 +48,7 @@ for i in range(0, num_trajectories):
         traj_i_rewards = trajectory_rewards[i]
         traj_j_rewards = trajectory_rewards[j]
 
+        print("GENERATING COMPARISONS FOR", i, j)
         gt_reward_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_rewards, traj_j_rewards, 'gt_reward')
         gt_reward_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_rewards, traj_i_rewards, 'gt_reward')
 
