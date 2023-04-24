@@ -231,7 +231,8 @@ def simulate_policy(
         video_writer=None,
         num_episodes=np.inf,
         printout=False,
-        use_gpu=False):
+        use_gpu=False,
+        output_dir=None):
     if printout:
         print("Loading policy...")
 
@@ -255,6 +256,9 @@ def simulate_policy(
     ep = 0
 
     # Loop through simulation rollouts
+    traj_observations = []
+    traj_actions = []
+    traj_rewards = []
     while ep < num_episodes:
         if printout:
             print("Rollout episode {}".format(ep))
@@ -273,5 +277,23 @@ def simulate_policy(
             env.log_diagnostics([path])
         logger.dump_tabular()
 
+        if output_dir is not None:
+            observations = path['observations']
+            actions = path['actions']
+            rewards = path['rewards']
+            assert observations.shape[0] == actions.shape[0] == rewards.shape[0]
+            traj_observations.append(observations)
+            traj_actions.append(actions)
+            traj_rewards.append(rewards)
+
         # Increment episode count
         ep += 1
+
+    if output_dir is not None:
+        traj_observations = np.asarray(traj_observations)
+        traj_actions = np.asarray(traj_actions)
+        traj_rewards = np.asarray(traj_rewards)
+        np.save(output_dir + '/traj_observations.npy', traj_observations)
+        np.save(output_dir + '/traj_actions.npy', traj_actions)
+        np.save(output_dir + '/traj_rewards.npy', traj_rewards)
+

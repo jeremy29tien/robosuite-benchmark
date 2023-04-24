@@ -105,4 +105,5 @@ if __name__ == "__main__":
         num_episodes=args.num_episodes,
         printout=True,
         use_gpu=args.gpu,
+        output_dir=args.output_dir
     )

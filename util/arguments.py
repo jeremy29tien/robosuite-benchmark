@@ -212,6 +212,11 @@ def add_rollout_args():
         required=True,
         help='path to the snapshot directory folder')
     parser.add_argument(
+        '--output_dir',
+        type=str,
+        required=False,
+        help='path to the output directory folder')
+    parser.add_argument(
         '--num_episodes',
         type=int,
         default=10,
