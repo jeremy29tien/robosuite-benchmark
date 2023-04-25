@@ -129,7 +129,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
     mse = nn.MSELoss()
 
     print("Loading dataset...")
-    dataset = NLTrajComparisonDataset(nlcomp_file, traj_a_file, traj_b_file)
+    dataset = NLTrajComparisonDataset(nlcomp_file, traj_a_file, traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
     generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
     train_loader = torch.utils.data.DataLoader(
