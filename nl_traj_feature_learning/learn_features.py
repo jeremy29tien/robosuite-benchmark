@@ -134,6 +134,10 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     )
 
     print("Beginning training...")
+    train_losses = []
+    val_losses = []
+    accuracies = []
+    log_likelihoods = []
     for epoch in range(epochs):
         loss = 0
         for train_datapoint in train_loader:
@@ -182,13 +186,16 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
         # compute the epoch training loss
         loss = loss / len(train_loader)
 
+        # Evaluation
         val_loss = 0
+        num_correct = 0
+        log_likelihood = 0
         for val_datapoint in val_loader:
             with torch.no_grad():
                 traj_a, traj_b, lang = val_datapoint
-                traj_a = torch.as_tensor(traj_a, device=device)
-                traj_b = torch.as_tensor(traj_b, device=device)
-                lang = torch.as_tensor(lang, device=device)
+                traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
+                traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
+                # lang = torch.as_tensor(lang, device=device)
                 val_datapoint = (traj_a, traj_b, lang)
                 pred = model(val_datapoint)
 
@@ -196,13 +203,61 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
                 reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
                 distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
                 distance_loss = torch.mean(distance_loss)
-                val_loss += reconstruction_loss + distance_loss
+                val_loss += (reconstruction_loss + distance_loss).item()
+
+                encoded_traj_a = encoded_traj_a.detach().cpu().numpy()
+                encoded_traj_b = encoded_traj_b.detach().cpu().numpy()
+                encoded_lang = encoded_lang.detach().cpu().numpy()
+
+                dot_prod = np.dot(encoded_traj_b-encoded_traj_a, encoded_lang)
+                if dot_prod > 0:
+                    num_correct += 1
+                log_likelihood += np.log(1/(1 + np.exp(-dot_prod)))
+
         val_loss /= len(val_loader)
+        accuracy = num_correct / len(val_loader)
 
         # display the epoch training loss
-        print("epoch : {}/{}, [train] reconstruction_loss = {:.6f}, [train] distance_loss = {:.6f}, [train] loss = {:.6f}, [val] loss = {:.6f}".format(epoch + 1, epochs, reconstruction_loss, distance_loss, loss, val_loss))
+        print("epoch : {}/{}, [train] loss = {:.6f}, [val] loss = {:.6f}, [val] accuracy = {:.6f}, [val] log_likelihood = {:.6f}".format(epoch + 1, epochs, loss, val_loss, accuracy, log_likelihood))
         # Don't forget to save the model (as we go)!
         torch.save(model, os.path.join(save_dir, 'model.pth'))
+        train_losses.append(loss)
+        val_losses.append(val_loss)
+        accuracies.append(accuracy)
+        log_likelihoods.append(log_likelihood)
+        np.save(os.path.join(save_dir, 'train_losses.npy'), np.asarray(train_losses))
+        np.save(os.path.join(save_dir, 'val_losses.npy'), np.asarray(val_losses))
+        np.save(os.path.join(save_dir, 'accuracies.npy'), np.asarray(accuracies))
+        np.save(os.path.join(save_dir, 'log_likelihoods.npy'), np.asarray(log_likelihoods))
+
+
+    # Evaluation
+    num_correct = 0
+    log_likelihood = 0
+    for val_datapoint in val_loader:
+        with torch.no_grad():
+            traj_a, traj_b, lang = val_datapoint
+            traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
+            traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
+            # lang = torch.as_tensor(lang, device=device)
+
+            val_datapoint = (traj_a, traj_b, lang)
+            pred = model(val_datapoint)
+            encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
+
+            encoded_traj_a = encoded_traj_a.detach().cpu().numpy()
+            encoded_traj_b = encoded_traj_b.detach().cpu().numpy()
+            encoded_lang = encoded_lang.detach().cpu().numpy()
+
+            dot_prod = np.dot(encoded_traj_b-encoded_traj_a, encoded_lang)
+            if dot_prod > 0:
+                num_correct += 1
+            log_likelihood += np.log(1/(1 + np.exp(-dot_prod)))
+
+    accuracy = num_correct / len(val_loader)
+    print("final accuracy:", accuracy)
+    print("final log likelihood:", log_likelihood)
+    return model
 
 
 if __name__ == '__main__':
@@ -217,5 +272,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train(args.seed, args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir)
+    trained_model = train(args.seed, args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir)
 
