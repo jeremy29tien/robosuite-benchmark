@@ -136,7 +136,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
             encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = output
 
             # compute training reconstruction loss
-            reconstruction_loss = mse(decoded_traj_a, traj_a) + mse(decoded_traj_b, traj_b)
+            reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
             distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
             train_loss = reconstruction_loss + distance_loss
 
@@ -163,7 +163,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
                 pred = model(val_datapoint)
 
                 encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
-                reconstruction_loss = mse(decoded_traj_a, traj_a) + mse(decoded_traj_b, traj_b)
+                reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
                 distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
                 val_loss += reconstruction_loss + distance_loss
         val_loss /= len(val_loader)
