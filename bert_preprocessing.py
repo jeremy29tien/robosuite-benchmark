@@ -33,6 +33,9 @@ for i, l in enumerate(nlcomps):
     bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
     # print("bert_output_embedding:", bert_output_embedding.shape)
     bert_output_embeddings.append(bert_output_embedding)
+    if i % batch_size == 0:
+        np.save('/home/jeremy/robosuite-benchmark/data/nl-traj/all-pairs/nlcomps.npy', np.asarray(bert_output_embeddings))
+
 bert_output_embeddings = np.asarray(bert_output_embeddings)
 print("bert_output_embeddings:", bert_output_embeddings.shape)
 
