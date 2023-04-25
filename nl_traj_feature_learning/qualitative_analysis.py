@@ -30,7 +30,7 @@ reference_policy_traj = reference_policy_trajs[0]  # We just take the first roll
 comp_str = "Move faster."
 bert_embedding = np.load('/home/jeremy/robosuite-benchmark/data/nl-traj/all-pairs/nlcomps.npy')[2]  # "Move faster is the 3rd string in file.
 
-encoded_ref_traj, _, encoded_comp_str, _, _ = model((torch.as_tensor(reference_policy_traj), torch.as_tensor(reference_policy_traj), torch.as_tensor(bert_embedding)))
+encoded_ref_traj, _, encoded_comp_str, _, _ = model((torch.as_tensor(reference_policy_traj, dtype=torch.float32), torch.as_tensor(reference_policy_traj, dtype=torch.float32), torch.as_tensor(bert_embedding, dtype=torch.float32)))
 
 # This is the traj we are looking for.
 encoded_target_traj = encoded_ref_traj + encoded_comp_str
@@ -53,7 +53,7 @@ for config in os.listdir(policy_dir):
         trajs = trajs[0:trajs_per_policy]
         rewards = rewards[0:trajs_per_policy]
 
-        encoded_traj, _, _, _, _ = model((torch.as_tensor(trajs), torch.as_tensor(trajs), torch.as_tensor(bert_embedding)))
+        encoded_traj, _, _, _, _ = model((torch.as_tensor(trajs, dtype=torch.float32), torch.as_tensor(trajs, dtype=torch.float32), torch.as_tensor(bert_embedding, dtype=torch.float32)))
 
         for i in range(trajs_per_policy):
             similarity = F.cosine_similarity(encoded_target_traj, encoded_traj[i])
