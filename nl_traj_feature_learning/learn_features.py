@@ -66,9 +66,11 @@ class NLTrajAutoencoder (nn.Module):
                 bert_output_embedding.append(word_embedding['layers'][0]['values'])
             # NOTE: We average across timesteps (since BERT produces a per-token embedding).
             bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
+            print("bert_output_embedding:", bert_output_embedding.shape)
             bert_output_embeddings.append(bert_output_embedding)
         bert_output_embeddings = np.asarray(bert_output_embeddings)
         bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
+        print("bert_output_embeddings:", bert_output_embeddings.shape)
 
         # Encode the language
         encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
@@ -105,7 +107,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=128, shuffle=True, num_workers=4, pin_memory=True
+        train_dataset, batch_size=4, shuffle=True, num_workers=4, pin_memory=True  # TODO: change batch size to a bigger one after debugging
     )
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
