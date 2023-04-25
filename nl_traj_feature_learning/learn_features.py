@@ -139,10 +139,14 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
             reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
             print("reconstruction_loss:", reconstruction_loss.shape)
             distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
+            print("distance_loss:", distance_loss.shape)
+            distance_loss = torch.mean(distance_loss)
+            print("distance_loss:", distance_loss.shape)
             train_loss = reconstruction_loss + distance_loss
+            print("train_loss:", train_loss.shape)
 
             # compute accumulated gradients
-            train_loss.mean().backward()
+            train_loss.backward()
 
             # perform parameter update based on current gradients
             optimizer.step()
