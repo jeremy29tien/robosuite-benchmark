@@ -55,7 +55,7 @@ class NLTrajAutoencoder (nn.Module):
         encoded_traj_b = torch.mean(encoded_traj_b, dim=-2)
 
         if not self.preprocessed_nlcomps:
-            print("RUNNING BERT...")
+            # print("RUNNING BERT...")
             # BERT-encode the language
             # TODO: Make sure that we use .detach() on bert output.
             #  e.g.: run_bert(lang).detach()
@@ -95,7 +95,7 @@ class NLTrajAutoencoder (nn.Module):
             # bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
             # print("bert_output_embeddings:", bert_output_embeddings.shape)
         else:
-            print("USING PRE-COMPUTED BERT EMBEDDINGS...")
+            # print("USING PRE-COMPUTED BERT EMBEDDINGS...")
             bert_output_embeddings = lang
 
         # Encode the language
@@ -170,17 +170,17 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
             # compute training reconstruction loss
             # MSELoss already takes the mean over the batch.
             reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
-            print("reconstruction_loss:", reconstruction_loss.shape)
+            # print("reconstruction_loss:", reconstruction_loss.shape)
 
             # F.cosine_similarity only reduces along the feature dimension, so we take the mean over the batch later.
             distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
-            print("distance_loss:", distance_loss.shape)
+            # print("distance_loss:", distance_loss.shape)
             distance_loss = torch.mean(distance_loss)
-            print("distance_loss:", distance_loss.shape)
+            # print("distance_loss:", distance_loss.shape)
 
             # By now, train_loss is a scalar.
             train_loss = reconstruction_loss + distance_loss
-            print("train_loss:", train_loss.shape)
+            # print("train_loss:", train_loss.shape)
 
             # compute accumulated gradients
             train_loss.backward()
@@ -219,10 +219,9 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
                 encoded_traj_b = encoded_traj_b.detach().cpu().numpy()
                 encoded_lang = encoded_lang.detach().cpu().numpy()
 
-                dot_prod = np.dot(encoded_traj_b-encoded_traj_a, encoded_lang)
-                if dot_prod > 0:
-                    num_correct += 1
-                log_likelihood += np.log(1/(1 + np.exp(-dot_prod)))
+                dot_prod = np.einsum('ij,ij->i', encoded_traj_b-encoded_traj_a, encoded_lang)
+                num_correct += np.sum(dot_prod > 0)
+                log_likelihood += np.sum(np.log(1/(1 + np.exp(-dot_prod))))
 
         val_loss /= len(val_loader)
         accuracy = num_correct / len(val_loader)
