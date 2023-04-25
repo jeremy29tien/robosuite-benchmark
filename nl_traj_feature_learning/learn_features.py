@@ -56,11 +56,15 @@ class NLTrajAutoencoder (nn.Module):
         # BERT-encode the language
         # TODO: Make sure that we use .detach() on bert output.
         #  e.g.: run_bert(lang).detach()
-        # Loop over the batch
-        bert_output_embeddings = []
+        bert_input = ""
         for l in lang:
-            bert_output = b.run_bert(l)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
-            bert_output_words = bert_output[0]['features']
+            bert_input = bert_input + l + "\n"
+
+        bert_output = b.run_bert(bert_input)
+        bert_output_embeddings = []
+        # Loop over the batch
+        for i, l in enumerate(lang):
+            bert_output_words = bert_output[i]['features']
             bert_output_embedding = []
             for word_embedding in bert_output_words:
                 bert_output_embedding.append(word_embedding['layers'][0]['values'])
@@ -71,6 +75,22 @@ class NLTrajAutoencoder (nn.Module):
         bert_output_embeddings = np.asarray(bert_output_embeddings)
         bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
         print("bert_output_embeddings:", bert_output_embeddings.shape)
+
+        # NOTE: The following code doesn't pass lang in as a batch, and is thus VERY slow.
+        # bert_output_embeddings = []
+        # for l in lang:
+        #     bert_output = b.run_bert(l)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
+        #     bert_output_words = bert_output[0]['features']
+        #     bert_output_embedding = []
+        #     for word_embedding in bert_output_words:
+        #         bert_output_embedding.append(word_embedding['layers'][0]['values'])
+        #     # NOTE: We average across timesteps (since BERT produces a per-token embedding).
+        #     bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
+        #     print("bert_output_embedding:", bert_output_embedding.shape)
+        #     bert_output_embeddings.append(bert_output_embedding)
+        # bert_output_embeddings = np.asarray(bert_output_embeddings)
+        # bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
+        # print("bert_output_embeddings:", bert_output_embeddings.shape)
 
         # Encode the language
         encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
