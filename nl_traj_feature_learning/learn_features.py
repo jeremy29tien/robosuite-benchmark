@@ -55,6 +55,7 @@ class NLTrajAutoencoder (nn.Module):
         encoded_traj_b = torch.mean(encoded_traj_b, dim=-2)
 
         if not self.preprocessed_nlcomps:
+            print("RUNNING BERT...")
             # BERT-encode the language
             # TODO: Make sure that we use .detach() on bert output.
             #  e.g.: run_bert(lang).detach()
@@ -94,6 +95,7 @@ class NLTrajAutoencoder (nn.Module):
             # bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
             # print("bert_output_embeddings:", bert_output_embeddings.shape)
         else:
+            print("USING PRE-COMPUTED BERT EMBEDDINGS...")
             bert_output_embeddings = lang
 
         # Encode the language
