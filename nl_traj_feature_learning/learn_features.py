@@ -136,12 +136,17 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
             encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = output
 
             # compute training reconstruction loss
+            # MSELoss already takes the mean over the batch.
             reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
             print("reconstruction_loss:", reconstruction_loss.shape)
+
+            # F.cosine_similarity only reduces along the feature dimension, so we take the mean over the batch later.
             distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
             print("distance_loss:", distance_loss.shape)
             distance_loss = torch.mean(distance_loss)
             print("distance_loss:", distance_loss.shape)
+
+            # By now, train_loss is a scalar.
             train_loss = reconstruction_loss + distance_loss
             print("train_loss:", train_loss.shape)
 
@@ -170,6 +175,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
                 encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
                 reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
                 distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
+                distance_loss = torch.mean(distance_loss)
                 val_loss += reconstruction_loss + distance_loss
         val_loss /= len(val_loader)
 
