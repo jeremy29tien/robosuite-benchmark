@@ -142,7 +142,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
             train_loss = reconstruction_loss + distance_loss
 
             # compute accumulated gradients
-            train_loss.backward()
+            train_loss.mean().backward()
 
             # perform parameter update based on current gradients
             optimizer.step()
