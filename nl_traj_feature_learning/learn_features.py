@@ -62,7 +62,7 @@ class NLTrajAutoencoder (nn.Module):
             bert_output = b.run_bert(l)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
             bert_output_words = bert_output[0]['features']
             bert_output_embedding = []
-            for word_embedding in bert_output_embedding:
+            for word_embedding in bert_output_words:
                 bert_output_embedding.append(word_embedding['layers'][0]['values'])
             # NOTE: We average across timesteps (since BERT produces a per-token embedding).
             bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
