@@ -5,6 +5,7 @@ import numpy as np
 import argparse
 import os
 import torch.nn.functional as F
+from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
 
 parser = argparse.ArgumentParser(description='')
 
