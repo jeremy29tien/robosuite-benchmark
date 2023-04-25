@@ -192,6 +192,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
             loss += train_loss.item()
 
         # compute the epoch training loss
+        # Note: this is the per-BATCH loss. len(train_loader) gives number of batches.
         loss = loss / len(train_loader)
 
         # Evaluation
@@ -225,9 +226,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
                 log_likelihood += np.sum(logsigmoid(torch.as_tensor(dot_prod)).detach().cpu().numpy())
 
         val_loss /= len(val_loader)
-        print("num_correct:", num_correct)
-        print("len(val_loader):", len(val_loader))
-        accuracy = num_correct / len(val_loader)
+        accuracy = num_correct / len(val_dataset)
 
         # display the epoch training loss
         print("epoch : {}/{}, [train] loss = {:.6f}, [val] loss = {:.6f}, [val] accuracy = {:.6f}, [val] log_likelihood = {:.6f}".format(epoch + 1, epochs, loss, val_loss, accuracy, log_likelihood))
