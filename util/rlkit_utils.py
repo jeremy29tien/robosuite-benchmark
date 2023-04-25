@@ -271,6 +271,7 @@ def simulate_policy(
         )
         if printout:
             print("Episode rewards:", np.sum(path['rewards'].flatten()))
+            print("Average speed:", np.mean(np.linalg.norm(path['observations'][:, 21:24], 2)))
 
         # Log diagnostics if supported by env
         if hasattr(env, "log_diagnostics"):
