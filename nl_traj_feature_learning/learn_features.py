@@ -173,7 +173,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
             # print("reconstruction_loss:", reconstruction_loss.shape)
 
             # F.cosine_similarity only reduces along the feature dimension, so we take the mean over the batch later.
-            distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
+            distance_loss = 1 - F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
             # print("distance_loss:", distance_loss.shape)
             distance_loss = torch.mean(distance_loss)
             # print("distance_loss:", distance_loss.shape)
@@ -221,9 +221,12 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
 
                 dot_prod = np.einsum('ij,ij->i', encoded_traj_b-encoded_traj_a, encoded_lang)
                 num_correct += np.sum(dot_prod > 0)
-                log_likelihood += np.sum(np.log(1/(1 + np.exp(-dot_prod))))
+                logsigmoid = nn.LogSigmoid()
+                log_likelihood += np.sum(logsigmoid(dot_prod))
 
         val_loss /= len(val_loader)
+        print("num_correct:", num_correct)
+        print("len(val_loader):", len(val_loader))
         accuracy = num_correct / len(val_loader)
 
         # display the epoch training loss
