@@ -222,7 +222,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
                 dot_prod = np.einsum('ij,ij->i', encoded_traj_b-encoded_traj_a, encoded_lang)
                 num_correct += np.sum(dot_prod > 0)
                 logsigmoid = nn.LogSigmoid()
-                log_likelihood += np.sum(logsigmoid(dot_prod))
+                log_likelihood += np.sum(logsigmoid(torch.as_tensor(dot_prod)).detach().cpu().numpy())
 
         val_loss /= len(val_loader)
         print("num_correct:", num_correct)
