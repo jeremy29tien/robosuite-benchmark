@@ -201,9 +201,8 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
 
         # display the epoch training loss
         print("epoch : {}/{}, [train] reconstruction_loss = {:.6f}, [train] distance_loss = {:.6f}, [train] loss = {:.6f}, [val] loss = {:.6f}".format(epoch + 1, epochs, reconstruction_loss, distance_loss, loss, val_loss))
-
-    # Don't forget to save the model!
-    torch.save(model, os.path.join(save_dir, 'model.pth'))
+        # Don't forget to save the model (as we go)!
+        torch.save(model, os.path.join(save_dir, 'model.pth'))
 
 
 if __name__ == '__main__':
