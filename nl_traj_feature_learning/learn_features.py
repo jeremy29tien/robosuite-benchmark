@@ -14,7 +14,7 @@ BERT_OUTPUT_DIM = 768
 
 
 class NLTrajAutoencoder (nn.Module):
-    def __init__(self, **kwargs):
+    def __init__(self, preprocessed_nlcomps=False, **kwargs):
         super().__init__()
         # TODO: can later make encoders and decoders transformers
         self.traj_encoder_hidden_layer = nn.Linear(
@@ -30,6 +30,7 @@ class NLTrajAutoencoder (nn.Module):
             in_features=128, out_features=STATE_DIM+ACTION_DIM
         )
 
+        self.preprocessed_nlcomps = preprocessed_nlcomps
         # Note: the first language encoder layer is BERT.
         self.lang_encoder_hidden_layer = nn.Linear(
             in_features=BERT_OUTPUT_DIM, out_features=128
@@ -53,44 +54,47 @@ class NLTrajAutoencoder (nn.Module):
         encoded_traj_a = torch.mean(encoded_traj_a, dim=-2)
         encoded_traj_b = torch.mean(encoded_traj_b, dim=-2)
 
-        # BERT-encode the language
-        # TODO: Make sure that we use .detach() on bert output.
-        #  e.g.: run_bert(lang).detach()
-        bert_input = ""
-        for l in lang:
-            bert_input = bert_input + l + "\n"
+        if not self.preprocessed_nlcomps:
+            # BERT-encode the language
+            # TODO: Make sure that we use .detach() on bert output.
+            #  e.g.: run_bert(lang).detach()
+            bert_input = ""
+            for l in lang:
+                bert_input = bert_input + l + "\n"
 
-        bert_output = b.run_bert(bert_input)
-        bert_output_embeddings = []
-        # Loop over the batch
-        for i, l in enumerate(lang):
-            bert_output_words = bert_output[i]['features']
-            bert_output_embedding = []
-            for word_embedding in bert_output_words:
-                bert_output_embedding.append(word_embedding['layers'][0]['values'])
-            # NOTE: We average across timesteps (since BERT produces a per-token embedding).
-            bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
-            print("bert_output_embedding:", bert_output_embedding.shape)
-            bert_output_embeddings.append(bert_output_embedding)
-        bert_output_embeddings = np.asarray(bert_output_embeddings)
-        bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
-        print("bert_output_embeddings:", bert_output_embeddings.shape)
+            bert_output = b.run_bert(bert_input)
+            bert_output_embeddings = []
+            # Loop over the batch
+            for i, l in enumerate(lang):
+                bert_output_words = bert_output[i]['features']
+                bert_output_embedding = []
+                for word_embedding in bert_output_words:
+                    bert_output_embedding.append(word_embedding['layers'][0]['values'])
+                # NOTE: We average across timesteps (since BERT produces a per-token embedding).
+                bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
+                print("bert_output_embedding:", bert_output_embedding.shape)
+                bert_output_embeddings.append(bert_output_embedding)
+            bert_output_embeddings = np.asarray(bert_output_embeddings)
+            bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
+            print("bert_output_embeddings:", bert_output_embeddings.shape)
 
-        # NOTE: The following code doesn't pass lang in as a batch, and is thus VERY slow.
-        # bert_output_embeddings = []
-        # for l in lang:
-        #     bert_output = b.run_bert(l)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
-        #     bert_output_words = bert_output[0]['features']
-        #     bert_output_embedding = []
-        #     for word_embedding in bert_output_words:
-        #         bert_output_embedding.append(word_embedding['layers'][0]['values'])
-        #     # NOTE: We average across timesteps (since BERT produces a per-token embedding).
-        #     bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
-        #     print("bert_output_embedding:", bert_output_embedding.shape)
-        #     bert_output_embeddings.append(bert_output_embedding)
-        # bert_output_embeddings = np.asarray(bert_output_embeddings)
-        # bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
-        # print("bert_output_embeddings:", bert_output_embeddings.shape)
+            # NOTE: The following code doesn't pass lang in as a batch, and is thus VERY slow.
+            # bert_output_embeddings = []
+            # for l in lang:
+            #     bert_output = b.run_bert(l)  # TODO: use the pytorch version of BERT on HuggingFace (is this necessary, since lang isn't a tensor?)
+            #     bert_output_words = bert_output[0]['features']
+            #     bert_output_embedding = []
+            #     for word_embedding in bert_output_words:
+            #         bert_output_embedding.append(word_embedding['layers'][0]['values'])
+            #     # NOTE: We average across timesteps (since BERT produces a per-token embedding).
+            #     bert_output_embedding = np.mean(np.asarray(bert_output_embedding), axis=0)
+            #     print("bert_output_embedding:", bert_output_embedding.shape)
+            #     bert_output_embeddings.append(bert_output_embedding)
+            # bert_output_embeddings = np.asarray(bert_output_embeddings)
+            # bert_output_embeddings = torch.as_tensor(bert_output_embeddings, dtype=torch.float32)
+            # print("bert_output_embeddings:", bert_output_embeddings.shape)
+        else:
+            bert_output_embeddings = lang
 
         # Encode the language
         encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
@@ -106,14 +110,14 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
+def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preprocessed_nlcomps=False):
     #  use gpu if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device:", device)
 
     # load it to the specified device, either gpu or cpu
     print("Initializing model and loading to device...")
-    model = NLTrajAutoencoder().to(device)
+    model = NLTrajAutoencoder(preprocessed_nlcomps).to(device)
 
     # create an optimizer object
     # Adam optimizer with learning rate 1e-3
@@ -269,8 +273,9 @@ if __name__ == '__main__':
     parser.add_argument('--traj-b-file', type=str, default='', help='')
     parser.add_argument('--epochs', type=int, default=100, help='')
     parser.add_argument('--save-dir', type=str, default='', help='')
+    parser.add_argument('--preprocessed-nlcomps', action="store_true", help='')
 
     args = parser.parse_args()
 
-    trained_model = train(args.seed, args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir)
+    trained_model = train(args.seed, args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir, preprocessed_nlcomps=args.preprocessed_nlcomps)
 

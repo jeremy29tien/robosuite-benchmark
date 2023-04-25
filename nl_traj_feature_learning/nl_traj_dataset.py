@@ -8,9 +8,12 @@ import numpy as np
 # traj_a_file is a .npy or .npz file with the first trajectory and has a shape of (n_trajectories, n_timesteps, STATE_DIM+ACTION_DIM)
 # traj_b_file is a .npy or .npz file with the second trajectory and has a shape of (n_trajectories, n_timesteps, STATE_DIM+ACTION_DIM)
 class NLTrajComparisonDataset(Dataset):
-    def __init__(self, nlcomp_file, traj_a_file, traj_b_file):
-        with open(nlcomp_file, 'rb') as f:
-            self.nlcomps = json.load(f)
+    def __init__(self, nlcomp_file, traj_a_file, traj_b_file, preprocessed_nlcomps=False):
+        if preprocessed_nlcomps:
+            self.nlcomps = np.load(nlcomp_file)
+        else:
+            with open(nlcomp_file, 'rb') as f:
+                self.nlcomps = json.load(f)
         self.traj_as = np.load(traj_a_file)
         self.traj_bs = np.load(traj_b_file)
 
