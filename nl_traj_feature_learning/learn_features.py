@@ -151,6 +151,8 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
             # also cast down (from float64 in np) to float32, since PyTorch's matrices are float32.
             traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
             traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
+            if preprocessed_nlcomps:
+                lang = torch.as_tensor(lang, dtype=torch.float32, device=device)
             # lang = torch.as_tensor(lang, device=device)
 
             # train_datapoint = train_datapoint.to(device)  # Shouldn't be needed, since already on device
@@ -199,6 +201,8 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
                 traj_a, traj_b, lang = val_datapoint
                 traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
                 traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
+                if preprocessed_nlcomps:
+                    lang = torch.as_tensor(lang, dtype=torch.float32, device=device)
                 # lang = torch.as_tensor(lang, device=device)
                 val_datapoint = (traj_a, traj_b, lang)
                 pred = model(val_datapoint)
@@ -235,32 +239,32 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
         np.save(os.path.join(save_dir, 'log_likelihoods.npy'), np.asarray(log_likelihoods))
 
 
-    # Evaluation
-    num_correct = 0
-    log_likelihood = 0
-    for val_datapoint in val_loader:
-        with torch.no_grad():
-            traj_a, traj_b, lang = val_datapoint
-            traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
-            traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
-            # lang = torch.as_tensor(lang, device=device)
-
-            val_datapoint = (traj_a, traj_b, lang)
-            pred = model(val_datapoint)
-            encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
-
-            encoded_traj_a = encoded_traj_a.detach().cpu().numpy()
-            encoded_traj_b = encoded_traj_b.detach().cpu().numpy()
-            encoded_lang = encoded_lang.detach().cpu().numpy()
-
-            dot_prod = np.dot(encoded_traj_b-encoded_traj_a, encoded_lang)
-            if dot_prod > 0:
-                num_correct += 1
-            log_likelihood += np.log(1/(1 + np.exp(-dot_prod)))
-
-    accuracy = num_correct / len(val_loader)
-    print("final accuracy:", accuracy)
-    print("final log likelihood:", log_likelihood)
+    # # Evaluation
+    # num_correct = 0
+    # log_likelihood = 0
+    # for val_datapoint in val_loader:
+    #     with torch.no_grad():
+    #         traj_a, traj_b, lang = val_datapoint
+    #         traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
+    #         traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
+    #         # lang = torch.as_tensor(lang, device=device)
+    #
+    #         val_datapoint = (traj_a, traj_b, lang)
+    #         pred = model(val_datapoint)
+    #         encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
+    #
+    #         encoded_traj_a = encoded_traj_a.detach().cpu().numpy()
+    #         encoded_traj_b = encoded_traj_b.detach().cpu().numpy()
+    #         encoded_lang = encoded_lang.detach().cpu().numpy()
+    #
+    #         dot_prod = np.dot(encoded_traj_b-encoded_traj_a, encoded_lang)
+    #         if dot_prod > 0:
+    #             num_correct += 1
+    #         log_likelihood += np.log(1/(1 + np.exp(-dot_prod)))
+    #
+    # accuracy = num_correct / len(val_loader)
+    # print("final accuracy:", accuracy)
+    # print("final log likelihood:", log_likelihood)
     return model
 
 
