@@ -114,7 +114,8 @@ class NLTrajAutoencoder (nn.Module):
 
 def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preprocessed_nlcomps=False):
     #  use gpu if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0")  # TODO: this is a temp fix. 
     print("device:", device)
 
     # load it to the specified device, either gpu or cpu
