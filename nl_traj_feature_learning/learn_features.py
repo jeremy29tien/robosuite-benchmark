@@ -107,10 +107,10 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=2, shuffle=True, num_workers=4, pin_memory=True  # TODO: change batch size to a bigger one after debugging
+        train_dataset, batch_size=256, shuffle=True, num_workers=4, pin_memory=True
     )
     val_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=2, shuffle=False, num_workers=4, pin_memory=True
+        val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
     )
 
     print("Beginning training...")
