@@ -107,7 +107,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
     generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=4, shuffle=True, num_workers=4, pin_memory=True  # TODO: change batch size to a bigger one after debugging
+        train_dataset, batch_size=2, shuffle=True, num_workers=4, pin_memory=True  # TODO: change batch size to a bigger one after debugging
     )
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
@@ -137,6 +137,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir):
 
             # compute training reconstruction loss
             reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
+            print("reconstruction_loss:", reconstruction_loss.shape)
             distance_loss = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
             train_loss = reconstruction_loss + distance_loss
 
