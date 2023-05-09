@@ -140,10 +140,10 @@ if __name__ == '__main__':
 
     # Split
     split_i = int(np.ceil(val_split))
-    train_trajectories = trajectories[0:split_i]
-    train_trajectory_rewards = trajectory_rewards[0:split_i]
-    val_trajectories = trajectories[split_i:]
-    val_trajectory_rewards = trajectory_rewards[split_i:]
+    val_trajectories = trajectories[0:split_i]
+    val_trajectory_rewards = trajectory_rewards[0:split_i]
+    train_trajectories = trajectories[split_i:]
+    train_trajectory_rewards = trajectory_rewards[split_i:]
 
     print("NUM_TRAJECTORIES:", num_trajectories)
     print("NUM TRAIN TRAJECTORIES:", len(train_trajectories))
