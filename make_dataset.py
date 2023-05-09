@@ -139,7 +139,7 @@ if __name__ == '__main__':
     trajectory_rewards = trajectory_rewards[p]
 
     # Split
-    split_i = int(np.ceil(val_split))
+    split_i = int(np.ceil(val_split*num_trajectories))
     val_trajectories = trajectories[0:split_i]
     val_trajectory_rewards = trajectory_rewards[0:split_i]
     train_trajectories = trajectories[split_i:]
