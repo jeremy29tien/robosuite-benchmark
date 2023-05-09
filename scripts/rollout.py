@@ -34,9 +34,14 @@ def handler(signal_received, frame):
 signal(SIGINT, handler)
 
 if __name__ == "__main__":
+    print(args.load_dir)
     # Set random seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+
+    if args.output_dir is not None and os.path.exists(args.output_dir + '/traj_observations.npy') and np.load(args.output_dir + '/traj_observations.npy').shape[0] >= args.num_episodes:
+        print("ALREADY ENOUGH TRAJECTORIES. EXITING GRACEFULLY.")
+        exit(1)
 
     # Get path to saved model
     kwargs_fpath = os.path.join(args.load_dir, "variant.json")
