@@ -127,6 +127,7 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
 
     # mean-squared error loss
     mse = nn.MSELoss()
+    logsigmoid = nn.LogSigmoid()
 
     print("Loading dataset...")
     dataset = NLTrajComparisonDataset(nlcomp_file, traj_a_file, traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
@@ -142,8 +143,10 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
     print("Beginning training...")
     train_losses = []
     val_losses = []
+    val_reconstruction_losses = []
+    val_cosine_similarities = []
+    val_log_likelihoods = []
     accuracies = []
-    log_likelihoods = []
     for epoch in range(epochs):
         loss = 0
         for train_datapoint in train_loader:
@@ -178,8 +181,13 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
             distance_loss = torch.mean(distance_loss)
             # print("distance_loss:", distance_loss.shape)
 
+            dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
+            log_likelihood = logsigmoid(dot_prod)
+            log_likelihood_loss = -1 * torch.mean(log_likelihood)
+
             # By now, train_loss is a scalar.
-            train_loss = reconstruction_loss + distance_loss
+            # train_loss = reconstruction_loss + distance_loss
+            train_loss = reconstruction_loss + log_likelihood_loss
             # print("train_loss:", train_loss.shape)
 
             # compute accumulated gradients
@@ -197,8 +205,10 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
 
         # Evaluation
         val_loss = 0
+        val_reconstruction_loss = 0
+        val_cosine_similarity = 0
+        val_log_likelihood = 0
         num_correct = 0
-        log_likelihood = 0
         for val_datapoint in val_loader:
             with torch.no_grad():
                 traj_a, traj_b, lang = val_datapoint
@@ -212,34 +222,44 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
 
                 encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
                 reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
-                distance_loss = 1 - F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
+                val_reconstruction_loss += reconstruction_loss.item()  # record
+
+                cos_sim = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
+                distance_loss = 1 - cos_sim
                 distance_loss = torch.mean(distance_loss)
-                val_loss += (reconstruction_loss + distance_loss).item()
+                val_cosine_similarity += cos_sim.item()
 
-                encoded_traj_a = encoded_traj_a.detach().cpu().numpy()
-                encoded_traj_b = encoded_traj_b.detach().cpu().numpy()
-                encoded_lang = encoded_lang.detach().cpu().numpy()
+                dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
+                log_likelihood = torch.mean(logsigmoid(dot_prod))
+                log_likelihood_loss = -1 * log_likelihood
+                val_log_likelihood += log_likelihood.item()
 
-                dot_prod = np.einsum('ij,ij->i', encoded_traj_b-encoded_traj_a, encoded_lang)
-                num_correct += np.sum(dot_prod > 0)
-                logsigmoid = nn.LogSigmoid()
-                log_likelihood += np.sum(logsigmoid(torch.as_tensor(dot_prod)).detach().cpu().numpy())
+                val_loss += (reconstruction_loss + log_likelihood_loss).item()
+                num_correct += np.sum(dot_prod.detach().cpu().numpy() > 0)
 
         val_loss /= len(val_loader)
+        val_reconstruction_loss /= len(val_loader)
+        val_cosine_similarity /= len(val_loader)
+        val_log_likelihood /= len(val_loader)
         accuracy = num_correct / len(val_dataset)
 
         # display the epoch training loss
-        print("epoch : {}/{}, [train] loss = {:.6f}, [val] loss = {:.6f}, [val] accuracy = {:.6f}, [val] log_likelihood = {:.6f}".format(epoch + 1, epochs, loss, val_loss, accuracy, log_likelihood))
+        print("epoch : {}/{}, [train] loss = {:.6f}, [val] loss = {:.6f}, [val] reconstruction_loss = {:.6f}, [val] cosine_similarity = {:.6f}, [val] log_likelihood = {:.6f}, [val] accuracy = {:.6f}".format(epoch + 1, epochs, loss, val_loss, val_reconstruction_loss, val_cosine_similarity, val_log_likelihood, accuracy))
         # Don't forget to save the model (as we go)!
+        torch.save(model.state_dict(), os.path.join(save_dir, 'model_state_dict.pth'))
         torch.save(model, os.path.join(save_dir, 'model.pth'))
         train_losses.append(loss)
         val_losses.append(val_loss)
+        val_reconstruction_losses.append(val_reconstruction_loss)
+        val_cosine_similarities.append(val_cosine_similarity)
+        val_log_likelihoods.append(val_log_likelihood)
         accuracies.append(accuracy)
-        log_likelihoods.append(log_likelihood)
         np.save(os.path.join(save_dir, 'train_losses.npy'), np.asarray(train_losses))
         np.save(os.path.join(save_dir, 'val_losses.npy'), np.asarray(val_losses))
+        np.save(os.path.join(save_dir, 'val_reconstruction_losses.npy'), np.asarray(val_reconstruction_losses))
+        np.save(os.path.join(save_dir, 'val_cosine_similarities.npy'), np.asarray(val_cosine_similarities))
+        np.save(os.path.join(save_dir, 'val_log_likelihoods.npy'), np.asarray(val_log_likelihoods))
         np.save(os.path.join(save_dir, 'accuracies.npy'), np.asarray(accuracies))
-        np.save(os.path.join(save_dir, 'log_likelihoods.npy'), np.asarray(log_likelihoods))
 
 
     # # Evaluation
