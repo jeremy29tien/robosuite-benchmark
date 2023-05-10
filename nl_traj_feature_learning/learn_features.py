@@ -107,7 +107,7 @@ class NLTrajAutoencoder (nn.Module):
 
         # Encode the language
         if self.remove_lang_encoder_hidden:
-            encoded_lang = torch.relu(self.lang_encoder_layer(bert_output_embeddings)))
+            encoded_lang = torch.relu(self.lang_encoder_layer(bert_output_embeddings))
         else:
             encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
 
