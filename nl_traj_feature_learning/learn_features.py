@@ -196,14 +196,15 @@ def train(seed, data_dir, epochs, save_dir, preprocessed_nlcomps=False):
             # print("reconstruction_loss:", reconstruction_loss.shape)
 
             # F.cosine_similarity only reduces along the feature dimension, so we take the mean over the batch later.
-            distance_loss = 1 - F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
-            # print("distance_loss:", distance_loss.shape)
-            distance_loss = torch.mean(distance_loss)
+            cos_sim = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
+            cos_sim = torch.mean(cos_sim)  # Take the mean over the batch.
+            distance_loss = 1 - cos_sim  # Then convert the value to a loss.
             # print("distance_loss:", distance_loss.shape)
 
             dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
             log_likelihood = logsigmoid(dot_prod)
-            log_likelihood_loss = -1 * torch.mean(log_likelihood)
+            log_likelihood = torch.mean(log_likelihood)  # Take the mean over the batch.
+            log_likelihood_loss = -1 * log_likelihood  # Then convert the value to a loss.
 
             # By now, train_loss is a scalar.
             # train_loss = reconstruction_loss + distance_loss
@@ -244,9 +245,8 @@ def train(seed, data_dir, epochs, save_dir, preprocessed_nlcomps=False):
                 reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b, torch.mean(traj_b, dim=-2))
                 val_reconstruction_loss += reconstruction_loss.item()  # record
 
-                cos_sim = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
+                cos_sim = torch.mean(F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang))
                 distance_loss = 1 - cos_sim
-                distance_loss = torch.mean(distance_loss)
                 val_cosine_similarity += cos_sim.item()
 
                 dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)

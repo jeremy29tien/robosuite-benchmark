@@ -24,7 +24,7 @@ class NLTrajComparisonDataset(Dataset):
         return len(self.nlcomps)
 
     def __getitem__(self, idx):
-        traj_a = self.traj_as[idx, :, :]
-        traj_b = self.traj_bs[idx, :, :]
-        nlcomp = self.nlcomps[idx]
+        traj_a = np.copy(self.traj_as[idx, :, :])
+        traj_b = np.copy(self.traj_bs[idx, :, :])
+        nlcomp = np.copy(self.nlcomps[idx])
         return traj_a, traj_b, nlcomp
