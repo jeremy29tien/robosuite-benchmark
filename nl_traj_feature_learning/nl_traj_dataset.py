@@ -14,8 +14,11 @@ class NLTrajComparisonDataset(Dataset):
         else:
             with open(nlcomp_file, 'rb') as f:
                 self.nlcomps = json.load(f)
-        self.traj_as = np.load(traj_a_file)
-        self.traj_bs = np.load(traj_b_file)
+        # self.traj_as = np.load(traj_a_file)
+        # NOTE: `mmap_mode` memory-maps the file, enabling us to read directly from disk
+        # rather than loading the entire (huge) array into memory.
+        self.traj_as = np.load(traj_a_file, mmap_mode='r')
+        self.traj_bs = np.load(traj_b_file, mmap_mode='r')
 
     def __len__(self):
         return len(self.nlcomps)
