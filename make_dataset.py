@@ -60,10 +60,11 @@ def generate_dataset(trajs, traj_rewards, all_pairs=True, dataset_size=0):
                 traj_i_reward = traj_rewards[i]
                 traj_j_reward = traj_rewards[j]
 
-                dataset_comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward)
-                for _ in dataset_comps:
+                comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward)
+                for c in comps:
                     dataset_traj_as.append(traj_i)
                     dataset_traj_bs.append(traj_j)
+                    dataset_comps.append(c)
     else:
         print("GENERATING " + str(dataset_size) + " RANDOM COMPARISONS.")
         for n in range(dataset_size):
@@ -79,10 +80,11 @@ def generate_dataset(trajs, traj_rewards, all_pairs=True, dataset_size=0):
             traj_i_reward = traj_rewards[i]
             traj_j_reward = traj_rewards[j]
 
-            dataset_comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward)
-            for _ in dataset_comps:
+            comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward)
+            for c in comps:
                 dataset_traj_as.append(traj_i)
                 dataset_traj_bs.append(traj_j)
+                dataset_comps.append(c)
 
     return dataset_traj_as, dataset_traj_bs, dataset_comps
 
