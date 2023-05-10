@@ -40,7 +40,7 @@ def preprocess_strings(nlcomp_dir, batch_size):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
 
-    parser.add_argument('nlcomp-dir', type=str, default='', help='')
+    parser.add_argument('--nlcomp-dir', type=str, default='', help='')
     parser.add_argument('--batch-size', type=int, default=5000, help='')
 
     args = parser.parse_args()
