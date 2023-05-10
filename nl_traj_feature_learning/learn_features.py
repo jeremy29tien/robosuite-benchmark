@@ -120,7 +120,7 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidden_dim=128, preprocessed_nlcomps=False):
+def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidden_dim=128, remove_lang_encoder_hidden=False, preprocessed_nlcomps=False):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -130,7 +130,7 @@ def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidd
 
     # load it to the specified device, either gpu or cpu
     print("Initializing model and loading to device...")
-    model = NLTrajAutoencoder(encoder_hidden_dim, decoder_hidden_dim, preprocessed_nlcomps).to(device)
+    model = NLTrajAutoencoder(encoder_hidden_dim=encoder_hidden_dim, decoder_hidden_dim=decoder_hidden_dim, remove_lang_encoder_hidden=remove_lang_encoder_hidden, preprocessed_nlcomps=preprocessed_nlcomps).to(device)
 
     # create an optimizer object
     # Adam optimizer with learning rate 1e-3
@@ -376,11 +376,13 @@ if __name__ == '__main__':
     parser.add_argument('--save-dir', type=str, default='', help='')
     parser.add_argument('--encoder-hidden-dim', type=int, default=128, help='')
     parser.add_argument('--decoder-hidden-dim', type=int, default=128, help='')
+    parser.add_argument('--remove-lang-encoder-hidden', action="store_true", help='')
     parser.add_argument('--preprocessed-nlcomps', action="store_true", help='')
 
     args = parser.parse_args()
 
     trained_model = train(args.seed, args.data_dir, args.epochs, args.save_dir,
                           encoder_hidden_dim=args.encoder_hidden_dim, decoder_hidden_dim=args.decoder_hidden_dim,
+                          remove_lang_encoder_hidden=args.remove_lang_encoder_hidden,
                           preprocessed_nlcomps=args.preprocessed_nlcomps)
 
