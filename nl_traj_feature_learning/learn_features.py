@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import bert.extract_features as b
+from gpu_utils import determine_default_torch_device
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 import argparse
 import os
@@ -115,7 +116,7 @@ def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidd
     np.random.seed(seed)
 
     #  use gpu if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(determine_default_torch_device(not torch.cuda.is_available()))
     print("device:", device)
 
     # load it to the specified device, either gpu or cpu
