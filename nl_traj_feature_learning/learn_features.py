@@ -15,7 +15,7 @@ BERT_OUTPUT_DIM = 768
 
 
 class NLTrajAutoencoder (nn.Module):
-    def __init__(self, encoder_hidden_dim=128, decoder_hidden_dim=128, preprocessed_nlcomps=False, **kwargs):
+    def __init__(self, encoder_hidden_dim=128, decoder_hidden_dim=128, remove_lang_encoder_hidden=False, preprocessed_nlcomps=False, **kwargs):
         super().__init__()
         # TODO: can later make encoders and decoders transformers
         self.traj_encoder_hidden_layer = nn.Linear(
@@ -33,12 +33,18 @@ class NLTrajAutoencoder (nn.Module):
 
         self.preprocessed_nlcomps = preprocessed_nlcomps
         # Note: the first language encoder layer is BERT.
-        self.lang_encoder_hidden_layer = nn.Linear(
-            in_features=BERT_OUTPUT_DIM, out_features=encoder_hidden_dim
-        )
-        self.lang_encoder_output_layer = nn.Linear(
-            in_features=encoder_hidden_dim, out_features=16
-        )
+        self.remove_lang_encoder_hidden = remove_lang_encoder_hidden
+        if self.remove_lang_encoder_hidden:
+            self.lang_encoder_layer = nn.Linear(
+                in_features=BERT_OUTPUT_DIM, out_features=16
+            )
+        else:
+            self.lang_encoder_hidden_layer = nn.Linear(
+                in_features=BERT_OUTPUT_DIM, out_features=encoder_hidden_dim
+            )
+            self.lang_encoder_output_layer = nn.Linear(
+                in_features=encoder_hidden_dim, out_features=16
+            )
         self.lang_decoder_output_layer = None  # TODO: implement language decoder later.
 
     # Input is a tuple with (trajectory_a, trajectory_b, language)
@@ -100,7 +106,10 @@ class NLTrajAutoencoder (nn.Module):
             bert_output_embeddings = lang
 
         # Encode the language
-        encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
+        if self.remove_lang_encoder_hidden:
+            encoded_lang = torch.relu(self.lang_encoder_layer(bert_output_embeddings)))
+        else:
+            encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
 
         # NOTE: traj_a is the reference, traj_b is the updated
 
