@@ -112,7 +112,10 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preprocessed_nlcomps=False):
+def train(seed, data_dir, epochs, save_dir, preprocessed_nlcomps=False):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
     #  use gpu if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device:", device)
@@ -130,9 +133,26 @@ def train(seed, nlcomp_file, traj_a_file, traj_b_file, epochs, save_dir, preproc
     logsigmoid = nn.LogSigmoid()
 
     print("Loading dataset...")
-    dataset = NLTrajComparisonDataset(nlcomp_file, traj_a_file, traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
-    generator = torch.Generator().manual_seed(seed)
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
+
+    # Some file-handling logic first.
+    if preprocessed_nlcomps:
+        train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.npy")
+        val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.npy")
+    else:
+        train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.json")
+        val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.json")
+    train_traj_a_file = os.path.join(data_dir, "train/traj_as.npy")
+    train_traj_b_file = os.path.join(data_dir, "train/traj_bs.npy")
+    val_traj_a_file = os.path.join(data_dir, "val/traj_as.npy")
+    val_traj_b_file = os.path.join(data_dir, "val/traj_bs.npy")
+
+    train_dataset = NLTrajComparisonDataset(train_nlcomp_file, train_traj_a_file, train_traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
+    val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
+
+    # NOTE: this creates a dataset that doesn't have trajectories separated across datasets. DEPRECATED.
+    # generator = torch.Generator().manual_seed(seed)
+    # train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9, 0.1], generator=generator)
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=256, shuffle=True, num_workers=4, pin_memory=True
     )
@@ -295,14 +315,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
 
     parser.add_argument('--seed', type=int, default=0, help='')
-    parser.add_argument('--nlcomp-file', type=str, default='', help='')
-    parser.add_argument('--traj-a-file', type=str, default='', help='')
-    parser.add_argument('--traj-b-file', type=str, default='', help='')
+    parser.add_argument('--data-dir', type=str, default='', help='')
     parser.add_argument('--epochs', type=int, default=100, help='')
     parser.add_argument('--save-dir', type=str, default='', help='')
     parser.add_argument('--preprocessed-nlcomps', action="store_true", help='')
 
     args = parser.parse_args()
 
-    trained_model = train(args.seed, args.nlcomp_file, args.traj_a_file, args.traj_b_file, args.epochs, args.save_dir, preprocessed_nlcomps=args.preprocessed_nlcomps)
+    trained_model = train(args.seed, args.data_dir, args.epochs, args.save_dir, preprocessed_nlcomps=args.preprocessed_nlcomps)
 
