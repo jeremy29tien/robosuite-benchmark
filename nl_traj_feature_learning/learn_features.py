@@ -371,6 +371,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     trained_model = train(args.seed, args.data_dir, args.epochs, args.save_dir,
-                          encoder_hidden_dim=args.encoder_hidden_dims, decoder_hidden_dim=args.decoder_hidden_dims,
+                          encoder_hidden_dim=args.encoder_hidden_dim, decoder_hidden_dim=args.decoder_hidden_dim,
                           preprocessed_nlcomps=args.preprocessed_nlcomps)
 
