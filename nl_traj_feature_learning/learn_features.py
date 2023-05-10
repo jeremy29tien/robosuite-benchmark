@@ -14,29 +14,29 @@ BERT_OUTPUT_DIM = 768
 
 
 class NLTrajAutoencoder (nn.Module):
-    def __init__(self, preprocessed_nlcomps=False, **kwargs):
+    def __init__(self, encoder_hidden_dim=128, decoder_hidden_dim=128, preprocessed_nlcomps=False, **kwargs):
         super().__init__()
         # TODO: can later make encoders and decoders transformers
         self.traj_encoder_hidden_layer = nn.Linear(
-            in_features=STATE_DIM+ACTION_DIM, out_features=128
+            in_features=STATE_DIM+ACTION_DIM, out_features=encoder_hidden_dim
         )
         self.traj_encoder_output_layer = nn.Linear(
-            in_features=128, out_features=16
+            in_features=encoder_hidden_dim, out_features=16
         )
         self.traj_decoder_hidden_layer = nn.Linear(
-            in_features=16, out_features=128
+            in_features=16, out_features=decoder_hidden_dim
         )
         self.traj_decoder_output_layer = nn.Linear(
-            in_features=128, out_features=STATE_DIM+ACTION_DIM
+            in_features=decoder_hidden_dim, out_features=STATE_DIM+ACTION_DIM
         )
 
         self.preprocessed_nlcomps = preprocessed_nlcomps
         # Note: the first language encoder layer is BERT.
         self.lang_encoder_hidden_layer = nn.Linear(
-            in_features=BERT_OUTPUT_DIM, out_features=128
+            in_features=BERT_OUTPUT_DIM, out_features=encoder_hidden_dim
         )
         self.lang_encoder_output_layer = nn.Linear(
-            in_features=128, out_features=16
+            in_features=encoder_hidden_dim, out_features=16
         )
         self.lang_decoder_output_layer = None  # TODO: implement language decoder later.
 
@@ -102,8 +102,6 @@ class NLTrajAutoencoder (nn.Module):
         encoded_lang = self.lang_encoder_output_layer(torch.relu(self.lang_encoder_hidden_layer(bert_output_embeddings)))
 
         # NOTE: traj_a is the reference, traj_b is the updated
-        # NOTE: We won't use this distance; we'll compute it during training.
-        distance = F.cosine_similarity(encoded_traj_b - encoded_traj_a, encoded_lang)
 
         decoded_traj_a = self.traj_decoder_output_layer(torch.relu(self.traj_decoder_hidden_layer(encoded_traj_a)))
         decoded_traj_b = self.traj_decoder_output_layer(torch.relu(self.traj_decoder_hidden_layer(encoded_traj_b)))
@@ -112,7 +110,7 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(seed, data_dir, epochs, save_dir, preprocessed_nlcomps=False):
+def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidden_dim=128, preprocessed_nlcomps=False):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -122,7 +120,7 @@ def train(seed, data_dir, epochs, save_dir, preprocessed_nlcomps=False):
 
     # load it to the specified device, either gpu or cpu
     print("Initializing model and loading to device...")
-    model = NLTrajAutoencoder(preprocessed_nlcomps).to(device)
+    model = NLTrajAutoencoder(encoder_hidden_dim, decoder_hidden_dim, preprocessed_nlcomps).to(device)
 
     # create an optimizer object
     # Adam optimizer with learning rate 1e-3
@@ -366,9 +364,13 @@ if __name__ == '__main__':
     parser.add_argument('--data-dir', type=str, default='', help='')
     parser.add_argument('--epochs', type=int, default=100, help='')
     parser.add_argument('--save-dir', type=str, default='', help='')
+    parser.add_argument('--encoder-hidden-dim', type=int, default=128, help='')
+    parser.add_argument('--decoder-hidden-dim', type=int, default=128, help='')
     parser.add_argument('--preprocessed-nlcomps', action="store_true", help='')
 
     args = parser.parse_args()
 
-    trained_model = train(args.seed, args.data_dir, args.epochs, args.save_dir, preprocessed_nlcomps=args.preprocessed_nlcomps)
+    trained_model = train(args.seed, args.data_dir, args.epochs, args.save_dir,
+                          encoder_hidden_dim=args.encoder_hidden_dims, decoder_hidden_dim=args.decoder_hidden_dims,
+                          preprocessed_nlcomps=args.preprocessed_nlcomps)
 
