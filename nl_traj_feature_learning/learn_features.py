@@ -130,7 +130,9 @@ def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidd
 
     # load it to the specified device, either gpu or cpu
     print("Initializing model and loading to device...")
-    model = NLTrajAutoencoder(encoder_hidden_dim=encoder_hidden_dim, decoder_hidden_dim=decoder_hidden_dim, remove_lang_encoder_hidden=remove_lang_encoder_hidden, preprocessed_nlcomps=preprocessed_nlcomps).to(device)
+    model = NLTrajAutoencoder(encoder_hidden_dim=encoder_hidden_dim, decoder_hidden_dim=decoder_hidden_dim,
+                              remove_lang_encoder_hidden=remove_lang_encoder_hidden,
+                              preprocessed_nlcomps=preprocessed_nlcomps).to(device)
 
     # create an optimizer object
     # Adam optimizer with learning rate 1e-3
