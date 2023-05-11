@@ -21,7 +21,7 @@ policy_dir = args.policy_dir
 trajs_per_policy = args.trajs_per_policy
 
 # Load model
-model = torch.load('/home/jeremy/robosuite-benchmark/models/model.pth')
+model = torch.load('/home/jeremy/robosuite-benchmark/models/3/model.pth')
 
 ################################################
 ### TEMPORARY ANALYSIS OF LANGUAGE EMBEDDINGS ##
