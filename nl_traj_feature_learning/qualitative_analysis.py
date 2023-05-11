@@ -69,7 +69,7 @@ for train_datapoint in train_loader:
         # print("encoded_traj_diff shape:", encoded_traj_diff.shape)
         if encoded_traj_diffs == []:
             encoded_traj_diffs.append(encoded_traj_diff)
-            encoded_traj_diffs = np.asarray(encoded_traj_diffs)
+            encoded_traj_diffs = np.squeeze(np.asarray(encoded_traj_diffs))
         else:
             encoded_traj_diffs = np.concatenate((encoded_traj_diffs, encoded_traj_diff), axis=0)
 
@@ -77,7 +77,7 @@ for train_datapoint in train_loader:
         # print("encoded_lang_np shape:", encoded_lang_np.shape)
         if encoded_langs == []:
             encoded_langs.append(encoded_lang_np)
-            encoded_langs = np.asarray(encoded_langs)
+            encoded_langs = np.squeeze(np.asarray(encoded_langs))
         else:
             encoded_langs = np.concatenate((encoded_langs, encoded_lang_np), axis=0)
 
@@ -87,7 +87,7 @@ for train_datapoint in train_loader:
         dot_prod_np = dot_prod.detach().cpu().numpy()
         if dot_prods == []:
             dot_prods.append(dot_prod_np)
-            dot_prods = np.asarray(dot_prods)
+            dot_prods = np.squeeze(np.asarray(dot_prods))
         else:
             dot_prods = np.concatenate((dot_prods, dot_prod_np), axis=0)
 
