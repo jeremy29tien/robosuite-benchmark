@@ -13,6 +13,7 @@ STATE_DIM = 64
 ACTION_DIM = 4  # NOTE: we use OSC_POSITION as our controller
 BERT_OUTPUT_DIM = 768
 
+INITIAL_LOSS_SANITY_CHECK = False
 
 class NLTrajAutoencoder (nn.Module):
     def __init__(self, encoder_hidden_dim=128, decoder_hidden_dim=128, remove_lang_encoder_hidden=False, preprocessed_nlcomps=False, **kwargs):
@@ -170,53 +171,54 @@ def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidd
         val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
     )
 
-    print("Initial loss sanity check:")
-    temp_loss = 0
-    for train_datapoint in train_loader:
-        with torch.no_grad():
-            traj_a, traj_b, lang = train_datapoint
-            traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
-            traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
-            if preprocessed_nlcomps:
-                lang = torch.as_tensor(lang, dtype=torch.float32, device=device)
-            # lang = torch.as_tensor(lang, device=device)
-            train_datapoint = (traj_a, traj_b, lang)
-            pred = model(train_datapoint)
+    if INITIAL_LOSS_SANITY_CHECK:
+        print("Initial loss sanity check:")
+        temp_loss = 0
+        for train_datapoint in train_loader:
+            with torch.no_grad():
+                traj_a, traj_b, lang = train_datapoint
+                traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
+                traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
+                if preprocessed_nlcomps:
+                    lang = torch.as_tensor(lang, dtype=torch.float32, device=device)
+                # lang = torch.as_tensor(lang, device=device)
+                train_datapoint = (traj_a, traj_b, lang)
+                pred = model(train_datapoint)
 
-            encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
-            reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b,
-                                                                                        torch.mean(traj_b, dim=-2))
+                encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
+                reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b,
+                                                                                            torch.mean(traj_b, dim=-2))
 
-            dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
-            log_likelihood = torch.mean(logsigmoid(dot_prod))
-            log_likelihood_loss = -1 * log_likelihood
+                dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
+                log_likelihood = torch.mean(logsigmoid(dot_prod))
+                log_likelihood_loss = -1 * log_likelihood
 
-            temp_loss += (reconstruction_loss + log_likelihood_loss).item()
-    temp_loss /= len(train_loader)
-    print("initial train loss:", temp_loss)
-    temp_loss = 0
-    for val_datapoint in val_loader:
-        with torch.no_grad():
-            traj_a, traj_b, lang = val_datapoint
-            traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
-            traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
-            if preprocessed_nlcomps:
-                lang = torch.as_tensor(lang, dtype=torch.float32, device=device)
-            # lang = torch.as_tensor(lang, device=device)
-            val_datapoint = (traj_a, traj_b, lang)
-            pred = model(val_datapoint)
+                temp_loss += (reconstruction_loss + log_likelihood_loss).item()
+        temp_loss /= len(train_loader)
+        print("initial train loss:", temp_loss)
+        temp_loss = 0
+        for val_datapoint in val_loader:
+            with torch.no_grad():
+                traj_a, traj_b, lang = val_datapoint
+                traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
+                traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
+                if preprocessed_nlcomps:
+                    lang = torch.as_tensor(lang, dtype=torch.float32, device=device)
+                # lang = torch.as_tensor(lang, device=device)
+                val_datapoint = (traj_a, traj_b, lang)
+                pred = model(val_datapoint)
 
-            encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
-            reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b,
-                                                                                        torch.mean(traj_b, dim=-2))
+                encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
+                reconstruction_loss = mse(decoded_traj_a, torch.mean(traj_a, dim=-2)) + mse(decoded_traj_b,
+                                                                                            torch.mean(traj_b, dim=-2))
 
-            dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
-            log_likelihood = torch.mean(logsigmoid(dot_prod))
-            log_likelihood_loss = -1 * log_likelihood
+                dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
+                log_likelihood = torch.mean(logsigmoid(dot_prod))
+                log_likelihood_loss = -1 * log_likelihood
 
-            temp_loss += (reconstruction_loss + log_likelihood_loss).item()
-    temp_loss /= len(val_loader)
-    print("initial val loss:", temp_loss)
+                temp_loss += (reconstruction_loss + log_likelihood_loss).item()
+        temp_loss /= len(val_loader)
+        print("initial val loss:", temp_loss)
 
     print("Beginning training...")
     train_losses = []
@@ -259,10 +261,10 @@ def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidd
             distance_loss = 1 - cos_sim  # Then convert the value to a loss.
             # print("distance_loss:", distance_loss.shape)
 
-            print("encoded_traj_b - encoded_traj_a:", (encoded_traj_b - encoded_traj_a).detach().cpu().numpy())
-            print("encoded_lang:", (encoded_lang).detach().cpu().numpy())
+            print("encoded_traj_b - encoded_traj_a:", (encoded_traj_b - encoded_traj_a).detach().cpu().numpy()[0])
+            print("encoded_lang:", (encoded_lang).detach().cpu().numpy()[0])
             dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
-            print("dot_prod:", dot_prod.detach().cpu().numpy())
+            print("dot_prod:", dot_prod.detach().cpu().numpy()[0])
             log_likelihood = logsigmoid(dot_prod)
             log_likelihood = torch.mean(log_likelihood)  # Take the mean over the batch.
             log_likelihood_loss = -1 * log_likelihood  # Then convert the value to a loss.
