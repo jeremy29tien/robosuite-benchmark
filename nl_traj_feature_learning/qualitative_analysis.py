@@ -42,14 +42,14 @@ val_traj_b_file = os.path.join(data_dir, "val/traj_bs.npy")
 
 train_dataset = NLTrajComparisonDataset(train_nlcomp_file, train_traj_a_file, train_traj_b_file,
                                         preprocessed_nlcomps=True)
-val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
-                                      preprocessed_nlcomps=True)
+# val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
+#                                       preprocessed_nlcomps=True)
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=256, shuffle=True, num_workers=4, pin_memory=True
 )
-val_loader = torch.utils.data.DataLoader(
-    val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
-)
+# val_loader = torch.utils.data.DataLoader(
+#     val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
+# )
 
 encoded_traj_diffs = []
 encoded_langs = []
@@ -75,6 +75,7 @@ for train_datapoint in train_loader:
         # print("dot_prod:", dot_prod.detach().cpu().numpy()[0])
 
 encoded_traj_diffs = np.asarray(encoded_traj_diffs)
+print("shape:", encoded_traj_diffs.shape)
 encoded_traj_diffs = np.reshape(encoded_traj_diffs, (encoded_traj_diffs.shape[0]*encoded_traj_diffs.shape[1], encoded_traj_diffs.shape[2]))
 encoded_langs = np.asarray(encoded_langs)
 encoded_langs = np.reshape(encoded_langs, (encoded_langs.shape[0]*encoded_langs.shape[1], encoded_langs.shape[2]))
