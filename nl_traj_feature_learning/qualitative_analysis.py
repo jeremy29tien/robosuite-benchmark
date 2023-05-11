@@ -66,24 +66,41 @@ for train_datapoint in train_loader:
         encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
 
         encoded_traj_diff = (encoded_traj_b - encoded_traj_a).detach().cpu().numpy()
-        print("encoded_traj_diff shape:", encoded_traj_diff.shape)
-        encoded_traj_diffs.append(encoded_traj_diff)
-        encoded_langs.append(encoded_lang.detach().cpu().numpy())
-        print("encoded_lang shape:", encoded_lang.detach().cpu().numpy().shape)
+        # print("encoded_traj_diff shape:", encoded_traj_diff.shape)
+        if not encoded_traj_diffs:
+            encoded_traj_diffs.append(encoded_traj_diff)
+            encoded_traj_diffs = np.asarray(encoded_traj_diffs)
+        else:
+            encoded_traj_diffs = np.concatenate((encoded_traj_diffs, encoded_traj_diff), axis=0)
+
+        encoded_lang_np = encoded_lang.detach().cpu().numpy()
+        # print("encoded_lang_np shape:", encoded_lang_np.shape)
+        if not encoded_langs:
+            encoded_langs.append(encoded_lang_np)
+            encoded_langs = np.asarray(encoded_langs)
+        else:
+            encoded_langs = np.concatenate((encoded_langs, encoded_lang_np), axis=0)
+
         # print("encoded_traj_b - encoded_traj_a:", encoded_traj_diff[0])
         # print("encoded_lang:", encoded_lang.detach().cpu().numpy()[0])
         dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
-        dot_prods.append(dot_prod.detach().cpu().numpy())
+        dot_prod_np = dot_prod.detach().cpu().numpy()
+        if not dot_prods:
+            dot_prods.append(dot_prod_np)
+            dot_prods = np.asarray(dot_prods)
+        else:
+            dot_prods = np.concatenate((dot_prods, dot_prod_np), axis=0)
+
         # print("dot_prod:", dot_prod.detach().cpu().numpy()[0])
 
-encoded_traj_diffs = np.asarray(encoded_traj_diffs)
+# encoded_traj_diffs = np.asarray(encoded_traj_diffs)
 print("encoded_traj_diffs shape:", encoded_traj_diffs.shape)
-encoded_traj_diffs = np.reshape(encoded_traj_diffs, (encoded_traj_diffs.shape[0]*encoded_traj_diffs.shape[1], encoded_traj_diffs.shape[2]))
-encoded_langs = np.asarray(encoded_langs)
+# encoded_traj_diffs = np.reshape(encoded_traj_diffs, (encoded_traj_diffs.shape[0]*encoded_traj_diffs.shape[1], encoded_traj_diffs.shape[2]))
+# encoded_langs = np.asarray(encoded_langs)
 print("encoded_langs shape:", encoded_langs.shape)
-encoded_langs = np.reshape(encoded_langs, (encoded_langs.shape[0]*encoded_langs.shape[1], encoded_langs.shape[2]))
-dot_prods = np.asarray(dot_prods)
-dot_prods = np.reshape(dot_prods, (dot_prods.shape[0]*dot_prods.shape[1], dot_prods.shape[2]))
+# encoded_langs = np.reshape(encoded_langs, (encoded_langs.shape[0]*encoded_langs.shape[1], encoded_langs.shape[2]))
+# dot_prods = np.asarray(dot_prods)
+# dot_prods = np.reshape(dot_prods, (dot_prods.shape[0]*dot_prods.shape[1], dot_prods.shape[2]))
 
 encoded_traj_diffs_std = np.std(encoded_traj_diffs, axis=0)
 encoded_langs_std = np.std(encoded_langs, axis=0)
