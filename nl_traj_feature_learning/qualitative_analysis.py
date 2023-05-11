@@ -67,7 +67,7 @@ for train_datapoint in train_loader:
 
         encoded_traj_diff = (encoded_traj_b - encoded_traj_a).detach().cpu().numpy()
         # print("encoded_traj_diff shape:", encoded_traj_diff.shape)
-        if not encoded_traj_diffs:
+        if encoded_traj_diffs == []:
             encoded_traj_diffs.append(encoded_traj_diff)
             encoded_traj_diffs = np.asarray(encoded_traj_diffs)
         else:
@@ -75,7 +75,7 @@ for train_datapoint in train_loader:
 
         encoded_lang_np = encoded_lang.detach().cpu().numpy()
         # print("encoded_lang_np shape:", encoded_lang_np.shape)
-        if not encoded_langs:
+        if encoded_langs == []:
             encoded_langs.append(encoded_lang_np)
             encoded_langs = np.asarray(encoded_langs)
         else:
@@ -85,7 +85,7 @@ for train_datapoint in train_loader:
         # print("encoded_lang:", encoded_lang.detach().cpu().numpy()[0])
         dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
         dot_prod_np = dot_prod.detach().cpu().numpy()
-        if not dot_prods:
+        if dot_prods == []:
             dot_prods.append(dot_prod_np)
             dot_prods = np.asarray(dot_prods)
         else:
