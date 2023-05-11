@@ -259,7 +259,10 @@ def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidd
             distance_loss = 1 - cos_sim  # Then convert the value to a loss.
             # print("distance_loss:", distance_loss.shape)
 
+            print("encoded_traj_b - encoded_traj_a:", (encoded_traj_b - encoded_traj_a).detach().cpu().numpy())
+            print("encoded_lang:", (encoded_lang).detach().cpu().numpy())
             dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
+            print("dot_prod:", dot_prod.detach().cpu().numpy())
             log_likelihood = logsigmoid(dot_prod)
             log_likelihood = torch.mean(log_likelihood)  # Take the mean over the batch.
             log_likelihood_loss = -1 * log_likelihood  # Then convert the value to a loss.
