@@ -7,6 +7,7 @@ import os
 import torch.nn.functional as F
 from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
+from gpu_utils import determine_default_torch_device
 
 parser = argparse.ArgumentParser(description='')
 
@@ -21,7 +22,10 @@ policy_dir = args.policy_dir
 trajs_per_policy = args.trajs_per_policy
 
 # Load model
+device = torch.device(determine_default_torch_device(not torch.cuda.is_available()))
+print("device:", device)
 model = torch.load('/home/jeremy/robosuite-benchmark/models/3/model.pth')
+model.to(device)
 
 ################################################
 ### TEMPORARY ANALYSIS OF LANGUAGE EMBEDDINGS ##
