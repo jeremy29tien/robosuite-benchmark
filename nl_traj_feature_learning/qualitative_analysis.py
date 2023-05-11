@@ -6,6 +6,7 @@ import argparse
 import os
 import torch.nn.functional as F
 from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
+from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 
 parser = argparse.ArgumentParser(description='')
 
@@ -21,6 +22,79 @@ trajs_per_policy = args.trajs_per_policy
 
 # Load model
 model = torch.load('/home/jeremy/robosuite-benchmark/models/model.pth')
+
+################################################
+### TEMPORARY ANALYSIS OF LANGUAGE EMBEDDINGS ##
+################################################
+data_dir = '/home/jeremy/robosuite-benchmark/data/nl-traj/62x3all-pairs'
+model.eval()
+# Some file-handling logic first.
+train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.npy")
+val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.npy")
+train_traj_a_file = os.path.join(data_dir, "train/traj_as.npy")
+train_traj_b_file = os.path.join(data_dir, "train/traj_bs.npy")
+val_traj_a_file = os.path.join(data_dir, "val/traj_as.npy")
+val_traj_b_file = os.path.join(data_dir, "val/traj_bs.npy")
+
+train_dataset = NLTrajComparisonDataset(train_nlcomp_file, train_traj_a_file, train_traj_b_file,
+                                        preprocessed_nlcomps=True)
+val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
+                                      preprocessed_nlcomps=True)
+train_loader = torch.utils.data.DataLoader(
+    train_dataset, batch_size=256, shuffle=True, num_workers=4, pin_memory=True
+)
+val_loader = torch.utils.data.DataLoader(
+    val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
+)
+
+encoded_traj_diffs = []
+encoded_langs = []
+dot_prods = []
+for train_datapoint in train_loader:
+    with torch.no_grad():
+        traj_a, traj_b, lang = train_datapoint
+        traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
+        traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
+        lang = torch.as_tensor(lang, dtype=torch.float32, device=device)
+        train_datapoint = (traj_a, traj_b, lang)
+        pred = model(train_datapoint)
+
+        encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
+
+        encoded_traj_diff = (encoded_traj_b - encoded_traj_a).detach().cpu().numpy()
+        encoded_traj_diffs.append(encoded_traj_diff)
+        encoded_langs.append(encoded_lang.detach().cpu().numpy())
+        # print("encoded_traj_b - encoded_traj_a:", encoded_traj_diff[0])
+        # print("encoded_lang:", encoded_lang.detach().cpu().numpy()[0])
+        dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
+        dot_prods.append(dot_prod.detach().cpu().numpy())
+        # print("dot_prod:", dot_prod.detach().cpu().numpy()[0])
+
+encoded_traj_diffs = np.asarray(encoded_traj_diffs)
+encoded_traj_diffs = np.reshape(encoded_traj_diffs, (encoded_traj_diffs.shape[0]*encoded_traj_diffs.shape[1], encoded_traj_diffs.shape[2]))
+encoded_langs = np.asarray(encoded_langs)
+encoded_langs = np.reshape(encoded_langs, (encoded_langs.shape[0]*encoded_langs.shape[1], encoded_langs.shape[2]))
+dot_prods = np.asarray(dot_prods)
+dot_prods = np.reshape(dot_prods, (dot_prods.shape[0]*dot_prods.shape[1], dot_prods.shape[2]))
+
+encoded_traj_diffs_std = np.std(encoded_traj_diffs, axis=0)
+encoded_langs_std = np.std(encoded_langs, axis=0)
+dot_prods_std = np.std(dot_prods, axis=0)
+
+print("encoded_traj_diffs_std:", encoded_traj_diffs_std)
+print("encoded_langs_std:", encoded_langs_std)
+print("dot_prods_std:", dot_prods_std)
+
+print("encoded_traj_diffs_std mean:", np.mean(encoded_traj_diffs_std))
+print("encoded_langs_std mean:", np.mean(encoded_langs_std))
+print("dot_prods_std mean:", np.mean(dot_prods_std))
+
+
+exit(1)
+################################################
+################################################
+################################################
+
 
 reference_policy_obs = np.load(os.path.join(reference_policy_dir, "traj_observations.npy"))
 reference_policy_act = np.load(os.path.join(reference_policy_dir, "traj_actions.npy"))
