@@ -11,35 +11,35 @@ def get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward):
     out = []
     gt_reward_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
                                                                        traj_j_reward, 'gt_reward')
-    gt_reward_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
-                                                                      traj_i_reward, 'gt_reward')
+    # gt_reward_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
+    #                                                                   traj_i_reward, 'gt_reward')
 
     speed_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward, traj_j_reward,
                                                                    'speed')
-    speed_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward, traj_i_reward,
-                                                                  'speed')
+    # speed_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward, traj_i_reward,
+    #                                                               'speed')
 
     height_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward, traj_j_reward,
                                                                     'height')
-    height_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward, traj_i_reward,
-                                                                   'height')
+    # height_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward, traj_i_reward,
+    #                                                                'height')
 
     distance_to_bottle_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
                                                                                 traj_j_reward,
                                                                                 'distance_to_bottle')
-    distance_to_bottle_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
-                                                                               traj_i_reward, 'distance_to_bottle')
+    # distance_to_bottle_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
+    #                                                                            traj_i_reward, 'distance_to_bottle')
 
     distance_to_cube_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
                                                                               traj_j_reward, 'distance_to_cube')
-    distance_to_cube_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
-                                                                             traj_i_reward, 'distance_to_cube')
+    # distance_to_cube_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
+    #                                                                          traj_i_reward, 'distance_to_cube')
 
     for c in gt_reward_ordinary_comps + speed_ordinary_comps + height_ordinary_comps + distance_to_bottle_ordinary_comps + distance_to_cube_ordinary_comps:
         out.append(c)
 
-    for c in gt_reward_flipped_comps + speed_flipped_comps + height_flipped_comps + distance_to_bottle_flipped_comps + distance_to_cube_flipped_comps:
-        out.append(c)
+    # for c in gt_reward_flipped_comps + speed_flipped_comps + height_flipped_comps + distance_to_bottle_flipped_comps + distance_to_cube_flipped_comps:
+    #     out.append(c)
 
     return out
 
@@ -65,6 +65,13 @@ def generate_dataset(trajs, traj_rewards, all_pairs=True, dataset_size=0):
                     dataset_traj_as.append(traj_i)
                     dataset_traj_bs.append(traj_j)
                     dataset_comps.append(c)
+
+                flipped_comps = get_comparisons(traj_j, traj_i, traj_j_reward, traj_i_reward)
+                for fc in flipped_comps:
+                    dataset_traj_as.append(traj_j)
+                    dataset_traj_bs.append(traj_i)
+                    dataset_comps.append(fc)
+
     else:
         print("GENERATING " + str(dataset_size) + " RANDOM COMPARISONS.")
         for n in range(dataset_size):
@@ -85,6 +92,12 @@ def generate_dataset(trajs, traj_rewards, all_pairs=True, dataset_size=0):
                 dataset_traj_as.append(traj_i)
                 dataset_traj_bs.append(traj_j)
                 dataset_comps.append(c)
+
+            flipped_comps = get_comparisons(traj_j, traj_i, traj_j_reward, traj_i_reward)
+            for fc in flipped_comps:
+                dataset_traj_as.append(traj_j)
+                dataset_traj_bs.append(traj_i)
+                dataset_comps.append(fc)
 
     return dataset_traj_as, dataset_traj_bs, dataset_comps
 
