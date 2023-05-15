@@ -111,6 +111,7 @@ if __name__ == '__main__':
     parser.add_argument('--all-pairs', action="store_true", help='')
     parser.add_argument('--trajs-per-policy', type=int, default=5, help='')
     parser.add_argument('--val-split', type=float, default=0.1, help='')
+    parser.add_argument('--seed', type=int, default=0, help='')
 
     args = parser.parse_args()
 
@@ -120,6 +121,9 @@ if __name__ == '__main__':
     all_pairs = args.all_pairs
     trajs_per_policy = args.trajs_per_policy
     val_split = args.val_split
+    seed = args.seed
+
+    np.random.seed(seed)
 
     print("GETTING TRAJECTORY ROLLOUTS...")
     trajectories = []
