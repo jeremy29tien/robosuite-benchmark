@@ -121,7 +121,7 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidden_dim=128, remove_lang_encoder_hidden=False, preprocessed_nlcomps=False):
+def train(seed, data_dir, epochs, save_dir, learning_rate=1e-3, weight_decay=0, encoder_hidden_dim=128, decoder_hidden_dim=128, remove_lang_encoder_hidden=False, preprocessed_nlcomps=False):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -137,7 +137,7 @@ def train(seed, data_dir, epochs, save_dir, encoder_hidden_dim=128, decoder_hidd
 
     # create an optimizer object
     # Adam optimizer with learning rate 1e-3
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
     # mean-squared error loss
     mse = nn.MSELoss()
@@ -381,6 +381,8 @@ if __name__ == '__main__':
     parser.add_argument('--data-dir', type=str, default='', help='')
     parser.add_argument('--epochs', type=int, default=100, help='')
     parser.add_argument('--save-dir', type=str, default='', help='')
+    parser.add_argument('--lr', type=float, default=1e-3, help='')
+    parser.add_argument('--weight-decay', type=float, default=0, help='')
     parser.add_argument('--encoder-hidden-dim', type=int, default=128, help='')
     parser.add_argument('--decoder-hidden-dim', type=int, default=128, help='')
     parser.add_argument('--remove-lang-encoder-hidden', action="store_true", help='')
@@ -389,6 +391,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     trained_model = train(args.seed, args.data_dir, args.epochs, args.save_dir,
+                          learning_rate=args.lr, weight_decay=args.weight_decay,
                           encoder_hidden_dim=args.encoder_hidden_dim, decoder_hidden_dim=args.decoder_hidden_dim,
                           remove_lang_encoder_hidden=args.remove_lang_encoder_hidden,
                           preprocessed_nlcomps=args.preprocessed_nlcomps)
