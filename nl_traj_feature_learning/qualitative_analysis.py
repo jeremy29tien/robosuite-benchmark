@@ -102,21 +102,32 @@ print("encoded_langs shape:", encoded_langs.shape)
 # dot_prods = np.asarray(dot_prods)
 # dot_prods = np.reshape(dot_prods, (dot_prods.shape[0]*dot_prods.shape[1], dot_prods.shape[2]))
 
+pos_dot_prods = np.asarray([dp for dp in dot_prods if dp > 0])
+neg_dot_prods = np.asarray([dp for dp in dot_prods if dp < 0])
+
 encoded_traj_diffs_mean = np.mean(encoded_traj_diffs, axis=0)
 encoded_langs_mean = np.mean(encoded_langs, axis=0)
 dot_prods_mean = np.mean(dot_prods, axis=0)
+pos_dot_prods_mean = np.mean(pos_dot_prods, axis=0)
+neg_dot_prods_mean = np.mean(neg_dot_prods, axis=0)
 
 encoded_traj_diffs_std = np.std(encoded_traj_diffs, axis=0)
 encoded_langs_std = np.std(encoded_langs, axis=0)
 dot_prods_std = np.std(dot_prods, axis=0)
+pos_dot_prods_std = np.std(pos_dot_prods, axis=0)
+neg_dot_prods_std = np.std(neg_dot_prods, axis=0)
 
 print("encoded_traj_diffs_mean:", encoded_traj_diffs_mean)
 print("encoded_langs_mean:", encoded_langs_mean)
 print("dot_prods_mean:", dot_prods_mean)
+print("pos_dot_prods_mean:", pos_dot_prods_mean)
+print("neg_dot_prods_mean:", neg_dot_prods_mean)
 
 print("encoded_traj_diffs_std:", encoded_traj_diffs_std)
 print("encoded_langs_std:", encoded_langs_std)
 print("dot_prods_std:", dot_prods_std)
+print("pos_dot_prods_std:", pos_dot_prods_std)
+print("neg_dot_prods_std:", neg_dot_prods_std)
 
 
 exit(1)
