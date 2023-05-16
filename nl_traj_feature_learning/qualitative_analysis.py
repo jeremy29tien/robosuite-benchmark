@@ -42,26 +42,26 @@ val_traj_b_file = os.path.join(data_dir, "val/traj_bs.npy")
 
 train_dataset = NLTrajComparisonDataset(train_nlcomp_file, train_traj_a_file, train_traj_b_file,
                                         preprocessed_nlcomps=True)
-# val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
-#                                       preprocessed_nlcomps=True)
+val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
+                                      preprocessed_nlcomps=True)
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=256, shuffle=True, num_workers=4, pin_memory=True
 )
-# val_loader = torch.utils.data.DataLoader(
-#     val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
-# )
+val_loader = torch.utils.data.DataLoader(
+    val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
+)
 
 encoded_traj_diffs = []
 encoded_langs = []
 dot_prods = []
-for train_datapoint in train_loader:
+for datapoint in val_loader:
     with torch.no_grad():
-        traj_a, traj_b, lang = train_datapoint
+        traj_a, traj_b, lang = datapoint
         traj_a = torch.as_tensor(traj_a, dtype=torch.float32, device=device)
         traj_b = torch.as_tensor(traj_b, dtype=torch.float32, device=device)
         lang = torch.as_tensor(lang, dtype=torch.float32, device=device)
-        train_datapoint = (traj_a, traj_b, lang)
-        pred = model(train_datapoint)
+        datapoint = (traj_a, traj_b, lang)
+        pred = model(datapoint)
 
         encoded_traj_a, encoded_traj_b, encoded_lang, decoded_traj_a, decoded_traj_b = pred
 
