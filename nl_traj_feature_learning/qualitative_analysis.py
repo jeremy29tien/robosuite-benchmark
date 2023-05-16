@@ -24,7 +24,7 @@ trajs_per_policy = args.trajs_per_policy
 # Load model
 device = torch.device(determine_default_torch_device(not torch.cuda.is_available()))
 print("device:", device)
-model = torch.load('/home/jeremy/robosuite-benchmark/models/3/model.pth')
+model = torch.load('/home/jeremy/robosuite-benchmark/models/fixed/3/model.pth')
 model.to(device)
 
 ################################################
