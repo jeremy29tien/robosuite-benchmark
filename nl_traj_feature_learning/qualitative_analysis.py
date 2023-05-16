@@ -81,8 +81,8 @@ for datapoint in val_loader:
         else:
             encoded_langs = np.concatenate((encoded_langs, encoded_lang_np), axis=0)
 
-        # print("encoded_traj_b - encoded_traj_a:", encoded_traj_diff[0])
-        # print("encoded_lang:", encoded_lang.detach().cpu().numpy()[0])
+        print("encoded_traj_b - encoded_traj_a:", encoded_traj_diff[0])
+        print("encoded_lang:", encoded_lang_np[0])
         dot_prod = torch.einsum('ij,ij->i', encoded_traj_b - encoded_traj_a, encoded_lang)
         dot_prod_np = dot_prod.detach().cpu().numpy()
         if dot_prods == []:
@@ -91,7 +91,7 @@ for datapoint in val_loader:
         else:
             dot_prods = np.concatenate((dot_prods, dot_prod_np), axis=0)
 
-        # print("dot_prod:", dot_prod.detach().cpu().numpy()[0])
+        print("dot_prod:", dot_prod_np[0])
 
 # encoded_traj_diffs = np.asarray(encoded_traj_diffs)
 print("encoded_traj_diffs shape:", encoded_traj_diffs.shape)
