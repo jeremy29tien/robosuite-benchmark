@@ -4,47 +4,33 @@ import json
 import numpy as np
 import argparse
 import os
-from robosuite.synthetic_comparisons import generate_synthetic_comparisons_commands
+from robosuite.synthetic_comparisons import generate_synthetic_comparisons_commands, generate_noisyaugmented_synthetic_comparisons_commands
 
 
-def get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward):
+def get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward, noisy=False):
     out = []
-    gt_reward_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
+    if noisy:
+        generate_comparisons = generate_noisyaugmented_synthetic_comparisons_commands
+    else:
+        generate_comparisons = generate_synthetic_comparisons_commands
+    gt_reward_ordinary_comps = generate_comparisons(traj_i, traj_j, traj_i_reward,
                                                                        traj_j_reward, 'gt_reward')
-    # gt_reward_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
-    #                                                                   traj_i_reward, 'gt_reward')
-
-    speed_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward, traj_j_reward,
+    speed_ordinary_comps = generate_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward,
                                                                    'speed')
-    # speed_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward, traj_i_reward,
-    #                                                               'speed')
-
-    height_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward, traj_j_reward,
+    height_ordinary_comps = generate_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward,
                                                                     'height')
-    # height_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward, traj_i_reward,
-    #                                                                'height')
-
-    distance_to_bottle_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
+    distance_to_bottle_ordinary_comps = generate_comparisons(traj_i, traj_j, traj_i_reward,
                                                                                 traj_j_reward,
                                                                                 'distance_to_bottle')
-    # distance_to_bottle_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
-    #                                                                            traj_i_reward, 'distance_to_bottle')
-
-    distance_to_cube_ordinary_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
+    distance_to_cube_ordinary_comps = generate_comparisons(traj_i, traj_j, traj_i_reward,
                                                                               traj_j_reward, 'distance_to_cube')
-    # distance_to_cube_flipped_comps = generate_synthetic_comparisons_commands(traj_j, traj_i, traj_j_reward,
-    #                                                                          traj_i_reward, 'distance_to_cube')
-
     for c in gt_reward_ordinary_comps + speed_ordinary_comps + height_ordinary_comps + distance_to_bottle_ordinary_comps + distance_to_cube_ordinary_comps:
         out.append(c)
-
-    # for c in gt_reward_flipped_comps + speed_flipped_comps + height_flipped_comps + distance_to_bottle_flipped_comps + distance_to_cube_flipped_comps:
-    #     out.append(c)
 
     return out
 
 
-def generate_dataset(trajs, traj_rewards, all_pairs=True, dataset_size=0):
+def generate_dataset(trajs, traj_rewards, noisy=False, id_mapping=False, all_pairs=True, dataset_size=0):
     dataset_traj_as = []
     dataset_traj_bs = []
     dataset_comps = []
@@ -60,17 +46,27 @@ def generate_dataset(trajs, traj_rewards, all_pairs=True, dataset_size=0):
                 traj_i_reward = traj_rewards[i]
                 traj_j_reward = traj_rewards[j]
 
-                comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward)
-                for c in comps:
-                    dataset_traj_as.append(traj_i)
-                    dataset_traj_bs.append(traj_j)
-                    dataset_comps.append(c)
+                comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward, noisy=noisy)
+                flipped_comps = get_comparisons(traj_j, traj_i, traj_j_reward, traj_i_reward, noisy=noisy)
 
-                flipped_comps = get_comparisons(traj_j, traj_i, traj_j_reward, traj_i_reward)
-                for fc in flipped_comps:
-                    dataset_traj_as.append(traj_j)
-                    dataset_traj_bs.append(traj_i)
-                    dataset_comps.append(fc)
+                if id_mapping:  # With this option, we store the indexes of the `trajs` array rather than the actual trajectory
+                    for c in comps:
+                        dataset_traj_as.append(i)
+                        dataset_traj_bs.append(j)
+                        dataset_comps.append(c)
+                    for fc in flipped_comps:
+                        dataset_traj_as.append(j)
+                        dataset_traj_bs.append(i)
+                        dataset_comps.append(fc)
+                else:
+                    for c in comps:
+                        dataset_traj_as.append(traj_i)
+                        dataset_traj_bs.append(traj_j)
+                        dataset_comps.append(c)
+                    for fc in flipped_comps:
+                        dataset_traj_as.append(traj_j)
+                        dataset_traj_bs.append(traj_i)
+                        dataset_comps.append(fc)
 
     else:
         print("GENERATING " + str(dataset_size) + " RANDOM COMPARISONS.")
@@ -87,17 +83,27 @@ def generate_dataset(trajs, traj_rewards, all_pairs=True, dataset_size=0):
             traj_i_reward = traj_rewards[i]
             traj_j_reward = traj_rewards[j]
 
-            comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward)
-            for c in comps:
-                dataset_traj_as.append(traj_i)
-                dataset_traj_bs.append(traj_j)
-                dataset_comps.append(c)
+            comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward, noisy=noisy)
+            flipped_comps = get_comparisons(traj_j, traj_i, traj_j_reward, traj_i_reward, noisy=noisy)
 
-            flipped_comps = get_comparisons(traj_j, traj_i, traj_j_reward, traj_i_reward)
-            for fc in flipped_comps:
-                dataset_traj_as.append(traj_j)
-                dataset_traj_bs.append(traj_i)
-                dataset_comps.append(fc)
+            if id_mapping:  # With this option, we store the indexes of the `trajs` array rather than the actual trajectory
+                for c in comps:
+                    dataset_traj_as.append(i)
+                    dataset_traj_bs.append(j)
+                    dataset_comps.append(c)
+                for fc in flipped_comps:
+                    dataset_traj_as.append(j)
+                    dataset_traj_bs.append(i)
+                    dataset_comps.append(fc)
+            else:
+                for c in comps:
+                    dataset_traj_as.append(traj_i)
+                    dataset_traj_bs.append(traj_j)
+                    dataset_comps.append(c)
+                for fc in flipped_comps:
+                    dataset_traj_as.append(traj_j)
+                    dataset_traj_bs.append(traj_i)
+                    dataset_comps.append(fc)
 
     return dataset_traj_as, dataset_traj_bs, dataset_comps
 
@@ -108,6 +114,8 @@ if __name__ == '__main__':
     parser.add_argument('--policy-dir', type=str, default='', help='')
     parser.add_argument('--output-dir', type=str, default='', help='')
     parser.add_argument('--dataset-size', type=int, default=1000, help='')
+    parser.add_argument('--noisy', action="store_true", help='')
+    parser.add_argument('--id-mapping', action="store_true", help='')
     parser.add_argument('--all-pairs', action="store_true", help='')
     parser.add_argument('--trajs-per-policy', type=int, default=5, help='')
     parser.add_argument('--val-split', type=float, default=0.1, help='')
@@ -117,6 +125,8 @@ if __name__ == '__main__':
 
     policy_dir = args.policy_dir
     output_dir = args.output_dir
+    noisy = args.noisy
+    id_mapping = args.id_mapping
     dataset_size = args.dataset_size
     all_pairs = args.all_pairs
     trajs_per_policy = args.trajs_per_policy
@@ -169,17 +179,31 @@ if __name__ == '__main__':
     print("NUM VAL TRAJECTORIES:", len(val_trajectories))
     print("COMPILING DATASET:")
 
-    train_traj_as, train_traj_bs, train_comps = generate_dataset(train_trajectories, train_trajectory_rewards, all_pairs=all_pairs, dataset_size=dataset_size)
-    val_traj_as, val_traj_bs, val_comps = generate_dataset(val_trajectories, val_trajectory_rewards, all_pairs=True)
+    train_traj_as, train_traj_bs, train_comps = generate_dataset(train_trajectories, train_trajectory_rewards,
+                                                                 noisy=noisy, id_mapping=id_mapping, all_pairs=all_pairs, dataset_size=dataset_size)
+    val_traj_as, val_traj_bs, val_comps = generate_dataset(val_trajectories, val_trajectory_rewards,
+                                                           noisy=noisy, id_mapping=id_mapping, all_pairs=True)
 
-    np.save(os.path.join(output_dir, 'train/traj_as.npy'), train_traj_as)
-    np.save(os.path.join(output_dir, 'train/traj_bs.npy'), train_traj_bs)
-    with open(os.path.join(output_dir, 'train/nlcomps.json'), 'w') as f:
-        json.dump(train_comps, f)
-    np.save(os.path.join(output_dir, 'val/traj_as.npy'), val_traj_as)
-    np.save(os.path.join(output_dir, 'val/traj_bs.npy'), val_traj_bs)
-    with open(os.path.join(output_dir, 'val/nlcomps.json'), 'w') as f:
-        json.dump(val_comps, f)
+    if id_mapping:
+        np.save(os.path.join(output_dir, 'train/traj_a_indexes.npy'), train_traj_as)
+        np.save(os.path.join(output_dir, 'train/traj_b_indexes.npy'), train_traj_bs)
+        np.save(os.path.join(output_dir, 'train/trajs.npy'), train_trajectories)
+        with open(os.path.join(output_dir, 'train/nlcomps.json'), 'w') as f:
+            json.dump(train_comps, f)
+        np.save(os.path.join(output_dir, 'val/traj_a_indexes.npy'), val_traj_as)
+        np.save(os.path.join(output_dir, 'val/traj_b_indexes.npy'), val_traj_bs)
+        np.save(os.path.join(output_dir, 'val/trajs.npy'), val_trajectories)
+        with open(os.path.join(output_dir, 'val/nlcomps.json'), 'w') as f:
+            json.dump(val_comps, f)
+    else:
+        np.save(os.path.join(output_dir, 'train/traj_as.npy'), train_traj_as)
+        np.save(os.path.join(output_dir, 'train/traj_bs.npy'), train_traj_bs)
+        with open(os.path.join(output_dir, 'train/nlcomps.json'), 'w') as f:
+            json.dump(train_comps, f)
+        np.save(os.path.join(output_dir, 'val/traj_as.npy'), val_traj_as)
+        np.save(os.path.join(output_dir, 'val/traj_bs.npy'), val_traj_bs)
+        with open(os.path.join(output_dir, 'val/nlcomps.json'), 'w') as f:
+            json.dump(val_comps, f)
 
 
 
