@@ -127,7 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--policy-dir', type=str, default='', help='')
     parser.add_argument('--output-dir', type=str, default='', help='')
     parser.add_argument('--dataset-size', type=int, default=1000, help='')
-    parser.add_argument('--noise_augmentation', type=int, default=0, help='')
+    parser.add_argument('--noise-augmentation', type=int, default=0, help='')
     parser.add_argument('--id-mapping', action="store_true", help='')
     parser.add_argument('--all-pairs', action="store_true", help='')
     parser.add_argument('--trajs-per-policy', type=int, default=5, help='')
