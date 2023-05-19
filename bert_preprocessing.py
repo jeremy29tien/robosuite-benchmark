@@ -5,15 +5,30 @@ import argparse
 import os
 
 
-def preprocess_strings(nlcomp_dir, batch_size):
+def preprocess_strings(nlcomp_dir, batch_size, id_mapping=False):
     # nlcomp_file is a json file with the list of comparisons in NL.
     nlcomp_file = os.path.join(nlcomp_dir, 'nlcomps.json')
 
     with open(nlcomp_file, 'rb') as f:
         nlcomps = json.load(f)
 
+    if id_mapping:
+        unique_nlcomps = list(set(nlcomps))
+        id_map = dict()
+        for i, unique_nlcomp in enumerate(unique_nlcomps):
+            id_map[unique_nlcomp] = i
+
+        nlcomp_indexes = []
+        for nlcomp in nlcomps:
+            nlcomp_indexes.append(id_map[nlcomp])
+        np.save(os.path.join(nlcomp_dir, 'nlcomp_indexes.npy'), np.asarray(nlcomp_indexes))
+
+        unbatched_input = unique_nlcomps
+    else:
+        unbatched_input = nlcomps
+
     batches = []
-    for i, l in enumerate(nlcomps):
+    for i, l in enumerate(unbatched_input):
         if i % batch_size == 0:
             batches.append("")
         batches[-1] = batches[-1] + l + "\n"
@@ -42,7 +57,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--nlcomp-dir', type=str, default='', help='')
     parser.add_argument('--batch-size', type=int, default=5000, help='')
+    parser.add_argument('--id-mapping', action="store_true", help='')
 
     args = parser.parse_args()
-    preprocess_strings(args.nlcomp_dir, args.batch_size)
+    preprocess_strings(args.nlcomp_dir, args.batch_size, args.id_mapping)
 
