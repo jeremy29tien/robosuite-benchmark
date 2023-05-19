@@ -48,7 +48,10 @@ def preprocess_strings(nlcomp_dir, batch_size, id_mapping=False):
             # print("bert_output_embedding:", bert_output_embedding.shape)
             bert_output_embeddings.append(bert_output_embedding)
 
-        outfile = os.path.join(nlcomp_dir, 'nlcomps.npy')
+        if id_mapping:
+            outfile = os.path.join(nlcomp_dir, 'unique_nlcomps.npy')
+        else:
+            outfile = os.path.join(nlcomp_dir, 'nlcomps.npy')
         np.save(outfile, np.asarray(bert_output_embeddings))
 
 
