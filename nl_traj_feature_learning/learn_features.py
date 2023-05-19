@@ -121,7 +121,7 @@ class NLTrajAutoencoder (nn.Module):
         return output
 
 
-def train(seed, data_dir, epochs, save_dir, learning_rate=1e-3, weight_decay=0, encoder_hidden_dim=128, decoder_hidden_dim=128, remove_lang_encoder_hidden=False, preprocessed_nlcomps=False):
+def train(seed, data_dir, epochs, save_dir, learning_rate=1e-3, weight_decay=0, encoder_hidden_dim=128, decoder_hidden_dim=128, remove_lang_encoder_hidden=False, preprocessed_nlcomps=False, id_mapped=False):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -147,18 +147,40 @@ def train(seed, data_dir, epochs, save_dir, learning_rate=1e-3, weight_decay=0, 
 
     # Some file-handling logic first.
     if preprocessed_nlcomps:
-        train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.npy")
-        val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.npy")
+        if id_mapped:
+            train_nlcomp_index_file = os.path.join(data_dir, "train/nlcomp_indexes.npy")
+            train_unique_nlcomp_file = os.path.join(data_dir, "train/unique_nlcomps.npy")
+            val_nlcomp_index_file = os.path.join(data_dir, "val/nlcomp_indexes.npy")
+            val_unique_nlcomp_file = os.path.join(data_dir, "val/unique_nlcomps.npy")
+        else:
+            train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.npy")
+            val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.npy")
     else:
         train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.json")
         val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.json")
-    train_traj_a_file = os.path.join(data_dir, "train/traj_as.npy")
-    train_traj_b_file = os.path.join(data_dir, "train/traj_bs.npy")
-    val_traj_a_file = os.path.join(data_dir, "val/traj_as.npy")
-    val_traj_b_file = os.path.join(data_dir, "val/traj_bs.npy")
+    if id_mapped:
+        train_traj_a_index_file = os.path.join(data_dir, "train/traj_a_indexes.npy")
+        train_traj_b_index_file = os.path.join(data_dir, "train/traj_b_indexes.npy")
+        train_traj_file = os.path.join(data_dir, "train/trajs.npy")
+        val_traj_a_index_file = os.path.join(data_dir, "val/traj_a_indexes.npy")
+        val_traj_b_index_file = os.path.join(data_dir, "val/traj_b_indexes.npy")
+        val_traj_file = os.path.join(data_dir, "val/trajs.npy")
+    else:
+        train_traj_a_file = os.path.join(data_dir, "train/traj_as.npy")
+        train_traj_b_file = os.path.join(data_dir, "train/traj_bs.npy")
+        val_traj_a_file = os.path.join(data_dir, "val/traj_as.npy")
+        val_traj_b_file = os.path.join(data_dir, "val/traj_bs.npy")
 
-    train_dataset = NLTrajComparisonDataset(train_nlcomp_file, train_traj_a_file, train_traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
-    val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
+    if id_mapped:
+        train_dataset = NLTrajComparisonDataset(train_nlcomp_index_file, train_traj_a_index_file, train_traj_b_index_file,
+                                                preprocessed_nlcomps=preprocessed_nlcomps, id_mapped=id_mapped,
+                                                unique_nlcomp_file=train_unique_nlcomp_file, traj_file=train_traj_file)
+        val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
+                                              preprocessed_nlcomps=preprocessed_nlcomps, id_mapped=id_mapped,
+                                              unique_nlcomp_file=val_unique_nlcomp_file, traj_file=val_traj_file)
+    else:
+        train_dataset = NLTrajComparisonDataset(train_nlcomp_file, train_traj_a_file, train_traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
+        val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file, preprocessed_nlcomps=preprocessed_nlcomps)
 
     # NOTE: this creates a dataset that doesn't have trajectories separated across datasets. DEPRECATED.
     # generator = torch.Generator().manual_seed(seed)
@@ -387,6 +409,7 @@ if __name__ == '__main__':
     parser.add_argument('--decoder-hidden-dim', type=int, default=128, help='')
     parser.add_argument('--remove-lang-encoder-hidden', action="store_true", help='')
     parser.add_argument('--preprocessed-nlcomps', action="store_true", help='')
+    parser.add_argument('--id-mapped', action="store_true", help='whether the data is id mapped')
 
     args = parser.parse_args()
 
@@ -394,5 +417,5 @@ if __name__ == '__main__':
                           learning_rate=args.lr, weight_decay=args.weight_decay,
                           encoder_hidden_dim=args.encoder_hidden_dim, decoder_hidden_dim=args.decoder_hidden_dim,
                           remove_lang_encoder_hidden=args.remove_lang_encoder_hidden,
-                          preprocessed_nlcomps=args.preprocessed_nlcomps)
+                          preprocessed_nlcomps=args.preprocessed_nlcomps, id_mapped=args.id_mapped)
 
