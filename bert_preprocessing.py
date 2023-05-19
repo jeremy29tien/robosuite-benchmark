@@ -63,5 +63,5 @@ if __name__ == '__main__':
     parser.add_argument('--id-mapping', action="store_true", help='')
 
     args = parser.parse_args()
-    preprocess_strings(args.nlcomp_dir, args.batch_size, args.id_mapping)
+    preprocess_strings(args.nlcomp_dir, args.batch_size, id_mapping=args.id_mapping)
 
