@@ -146,19 +146,12 @@ def train(seed, data_dir, epochs, save_dir, learning_rate=1e-3, weight_decay=0, 
     print("Loading dataset...")
 
     # Some file-handling logic first.
-    if preprocessed_nlcomps:
-        if id_mapped:
-            train_nlcomp_index_file = os.path.join(data_dir, "train/nlcomp_indexes.npy")
-            train_unique_nlcomp_file = os.path.join(data_dir, "train/unique_nlcomps.npy")
-            val_nlcomp_index_file = os.path.join(data_dir, "val/nlcomp_indexes.npy")
-            val_unique_nlcomp_file = os.path.join(data_dir, "val/unique_nlcomps.npy")
-        else:
-            train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.npy")
-            val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.npy")
-    else:
-        train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.json")
-        val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.json")
     if id_mapped:
+        train_nlcomp_index_file = os.path.join(data_dir, "train/nlcomp_indexes.npy")
+        train_unique_nlcomp_file = os.path.join(data_dir, "train/unique_nlcomps.npy")
+        val_nlcomp_index_file = os.path.join(data_dir, "val/nlcomp_indexes.npy")
+        val_unique_nlcomp_file = os.path.join(data_dir, "val/unique_nlcomps.npy")
+
         train_traj_a_index_file = os.path.join(data_dir, "train/traj_a_indexes.npy")
         train_traj_b_index_file = os.path.join(data_dir, "train/traj_b_indexes.npy")
         train_traj_file = os.path.join(data_dir, "train/trajs.npy")
@@ -166,6 +159,13 @@ def train(seed, data_dir, epochs, save_dir, learning_rate=1e-3, weight_decay=0, 
         val_traj_b_index_file = os.path.join(data_dir, "val/traj_b_indexes.npy")
         val_traj_file = os.path.join(data_dir, "val/trajs.npy")
     else:
+        if preprocessed_nlcomps:
+            train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.npy")
+            val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.npy")
+        else:
+            train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.json")
+            val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.json")
+
         train_traj_a_file = os.path.join(data_dir, "train/traj_as.npy")
         train_traj_b_file = os.path.join(data_dir, "train/traj_bs.npy")
         val_traj_a_file = os.path.join(data_dir, "val/traj_as.npy")
@@ -175,7 +175,7 @@ def train(seed, data_dir, epochs, save_dir, learning_rate=1e-3, weight_decay=0, 
         train_dataset = NLTrajComparisonDataset(train_nlcomp_index_file, train_traj_a_index_file, train_traj_b_index_file,
                                                 preprocessed_nlcomps=preprocessed_nlcomps, id_mapped=id_mapped,
                                                 unique_nlcomp_file=train_unique_nlcomp_file, traj_file=train_traj_file)
-        val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
+        val_dataset = NLTrajComparisonDataset(val_nlcomp_index_file, val_traj_a_index_file, val_traj_b_index_file,
                                               preprocessed_nlcomps=preprocessed_nlcomps, id_mapped=id_mapped,
                                               unique_nlcomp_file=val_unique_nlcomp_file, traj_file=val_traj_file)
     else:
