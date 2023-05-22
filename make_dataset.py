@@ -201,6 +201,7 @@ if __name__ == '__main__':
         np.save(os.path.join(output_dir, 'train/traj_a_indexes.npy'), train_traj_as)
         np.save(os.path.join(output_dir, 'train/traj_b_indexes.npy'), train_traj_bs)
         np.save(os.path.join(output_dir, 'train/trajs.npy'), train_trajectories)
+        # TODO: save trajectory rewards too.
         with open(os.path.join(output_dir, 'train/nlcomps.json'), 'w') as f:
             json.dump(train_comps, f)
         np.save(os.path.join(output_dir, 'val/traj_a_indexes.npy'), val_traj_as)
