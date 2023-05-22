@@ -9,6 +9,8 @@ import torch.nn.functional as F
 from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 from gpu_utils import determine_default_torch_device
+import robosuite.synthetic_comparisons
+from robosuite.environments.manipulation.lift_features import speed, height, distance_to_bottle, distance_to_cube
 
 
 def load_model(model_path):
@@ -196,14 +198,87 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
     return max_cos_similarity_traj, max_log_likelihood_traj
 
 
+def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embeddings, similarity_metric='log_likelihood'):
+    p = np.random.permutation(n_trajs)
+    trajectories = trajectories[p]
+    ref_trajs = trajectories[0:n_trajs]
+
+    num_correct = 0
+
+    for ref_traj in ref_trajs:
+        for nl_comp, nl_embedding in zip(nl_comps, nl_embeddings):
+            max_cos_similarity_traj, max_log_likelihood_traj = add_embeddings(model, device, trajectories, ref_traj, nl_embedding)
+            if similarity_metric == 'log_likelihood':
+                target_traj = max_log_likelihood_traj
+            else:
+                target_traj = max_cos_similarity_traj
+
+            # Greater
+            if len([adj for adj in robosuite.synthetic_comparisons.greater_speed_adjs if adj in nl_comp]) > 0:
+                ref_traj_feature_values = [speed(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
+                if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
+                    num_correct += 1
+
+            elif len([adj for adj in robosuite.synthetic_comparisons.greater_height_adjs if adj in nl_comp]) > 0:
+                ref_traj_feature_values = [height(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [height(target_traj[t]) for t in range(len(target_traj))]
+                if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
+                    num_correct += 1
+
+            elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
+                ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [distance_to_bottle(target_traj[t]) for t in range(len(target_traj))]
+                if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
+                    num_correct += 1
+
+            elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
+                ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
+                if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
+                    num_correct += 1
+
+            # Lesser
+            elif len([adj for adj in robosuite.synthetic_comparisons.less_speed_adjs if adj in nl_comp]) > 0:
+                ref_traj_feature_values = [speed(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
+                if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
+                    num_correct += 1
+
+            elif len([adj for adj in robosuite.synthetic_comparisons.less_height_adjs if adj in nl_comp]) > 0:
+                ref_traj_feature_values = [height(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [height(target_traj[t]) for t in range(len(target_traj))]
+                if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
+                    num_correct += 1
+
+            elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
+                ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [distance_to_bottle(target_traj[t]) for t in range(len(target_traj))]
+                if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
+                    num_correct += 1
+
+            elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
+                ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
+                if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
+                    num_correct += 1
+
+    print("num_correct:", num_correct)
+    print("accuracy:", num_correct / n_trajs * len(nl_comps))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--seed', type=int, default=0, help='')
 
     parser.add_argument('--reference-policy-dir', type=str, default='', help='')
     parser.add_argument('--policy-dir', type=str, default='', help='')
     parser.add_argument('--trajs-per-policy', type=int, default=5, help='')
 
     args = parser.parse_args()
+
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
     reference_policy_dir = args.reference_policy_dir
     policy_dir = args.policy_dir
