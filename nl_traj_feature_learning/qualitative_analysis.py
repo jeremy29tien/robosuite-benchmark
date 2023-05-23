@@ -11,6 +11,7 @@ from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 from gpu_utils import determine_default_torch_device
 import robosuite.synthetic_comparisons
 from robosuite.environments.manipulation.lift_features import speed, height, distance_to_bottle, distance_to_cube
+from bert_preprocessing import preprocess_strings
 
 
 def load_model(model_path):
@@ -270,18 +271,41 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', type=int, default=0, help='')
-
-    parser.add_argument('--reference-policy-dir', type=str, default='', help='')
-    parser.add_argument('--policy-dir', type=str, default='', help='')
-    parser.add_argument('--trajs-per-policy', type=int, default=5, help='')
+    parser.add_argument('--model-path', type=str, default='', help='')
+    parser.add_argument('--data-dir', type=str, default='', help='')
+    parser.add_argument('--val', action="store_true", help='')
+    parser.add_argument('--n-trajs', type=int, default=0, help='')
+    parser.add_argument('--similarity-metric', type=str, default='', help='')
 
     args = parser.parse_args()
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    reference_policy_dir = args.reference_policy_dir
-    policy_dir = args.policy_dir
-    trajs_per_policy = args.trajs_per_policy
+    model_path = args.model_path
+    data_dir = args.data_dir
+    val = args.val  # Whether or not to use validation (default train)
+    n_trajs = args.n_trajs
+    similarity_metric = args.similarity_metric
+
+    model, device = load_model(model_path)
+    if val:
+        nl_comp_file = os.path.join(data_dir, "val/nlcomps.json")
+        traj_file = os.path.join(data_dir, "val/trajs.npy")
+    else:
+        nl_comp_file = os.path.join(data_dir, "train/nlcomps.json")
+        traj_file = os.path.join(data_dir, "train/trajs.npy")
+
+    with open(nl_comp_file, 'rb') as f:
+        nl_comps = json.load(f)
+    trajs = np.load(traj_file)
+
+    # IMPORTANT: Make this a unique set of nl comps
+    nl_comps = list(set(nl_comps))
+    nl_embeddings = preprocess_strings('', 500, nl_comps)
+
+    run_accuracy_check(model, device, n_trajs, trajs, nl_comps, nl_embeddings, similarity_metric)
+
+
 
 

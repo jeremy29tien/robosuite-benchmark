@@ -5,12 +5,15 @@ import argparse
 import os
 
 
-def preprocess_strings(nlcomp_dir, batch_size, id_mapping=False):
-    # nlcomp_file is a json file with the list of comparisons in NL.
-    nlcomp_file = os.path.join(nlcomp_dir, 'nlcomps.json')
+def preprocess_strings(nlcomp_dir, batch_size, nlcomp_list=None, id_mapping=False, save=False):
+    if nlcomp_list is None:
+        # nlcomp_file is a json file with the list of comparisons in NL.
+        nlcomp_file = os.path.join(nlcomp_dir, 'nlcomps.json')
 
-    with open(nlcomp_file, 'rb') as f:
-        nlcomps = json.load(f)
+        with open(nlcomp_file, 'rb') as f:
+            nlcomps = json.load(f)
+    else:
+        nlcomps = nlcomp_list
 
     if id_mapping:
         unique_nlcomps = list(set(nlcomps))
@@ -21,7 +24,8 @@ def preprocess_strings(nlcomp_dir, batch_size, id_mapping=False):
         nlcomp_indexes = []
         for nlcomp in nlcomps:
             nlcomp_indexes.append(id_map[nlcomp])
-        np.save(os.path.join(nlcomp_dir, 'nlcomp_indexes.npy'), np.asarray(nlcomp_indexes))
+        if save:
+            np.save(os.path.join(nlcomp_dir, 'nlcomp_indexes.npy'), np.asarray(nlcomp_indexes))
 
         unbatched_input = unique_nlcomps
     else:
@@ -52,7 +56,9 @@ def preprocess_strings(nlcomp_dir, batch_size, id_mapping=False):
             outfile = os.path.join(nlcomp_dir, 'unique_nlcomps.npy')
         else:
             outfile = os.path.join(nlcomp_dir, 'nlcomps.npy')
-        np.save(outfile, np.asarray(bert_output_embeddings))
+        if save:
+            np.save(outfile, np.asarray(bert_output_embeddings))
+        return np.asarray(bert_output_embeddings)
 
 
 if __name__ == '__main__':
@@ -63,5 +69,5 @@ if __name__ == '__main__':
     parser.add_argument('--id-mapping', action="store_true", help='')
 
     args = parser.parse_args()
-    preprocess_strings(args.nlcomp_dir, args.batch_size, id_mapping=args.id_mapping)
+    preprocess_strings(args.nlcomp_dir, args.batch_size, id_mapping=args.id_mapping, save=True)
 
