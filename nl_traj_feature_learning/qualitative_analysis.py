@@ -225,6 +225,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                 print("target_traj speed:", np.mean(target_traj_feature_values))
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
+                else:
+                    print("WRONG.")
 
             elif len([adj for adj in robosuite.synthetic_comparisons.greater_height_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [height(ref_traj[t]) for t in range(len(ref_traj))]
