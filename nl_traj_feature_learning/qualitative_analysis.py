@@ -270,6 +270,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                 target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
+            else:
+                print("THIS SHOULDN'T BE PRINTED. ALL STATEMENTS SHOULD FALL INTO ABOVE.")
 
     print("num_correct:", num_correct)
     print("accuracy:", num_correct / (n_trajs * len(nl_comps)))
