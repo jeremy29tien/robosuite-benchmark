@@ -206,6 +206,7 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
     ref_trajs = trajectories[0:n_trajs]
 
     num_correct = 0
+    num_incorrect = 0
 
     for ref_traj in ref_trajs:
         for nl_comp, nl_embedding in zip(nl_comps, nl_embeddings):
@@ -226,25 +227,31 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
                 else:
-                    print("WRONG.")
+                    num_incorrect += 1
 
             elif len([adj for adj in robosuite.synthetic_comparisons.greater_height_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [height(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [height(target_traj[t]) for t in range(len(target_traj))]
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
+                else:
+                    num_incorrect += 1
 
             elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
                 ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_bottle(target_traj[t]) for t in range(len(target_traj))]
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
+                else:
+                    num_incorrect += 1
 
             elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
                 ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
+                else:
+                    num_incorrect += 1
 
             # Lesser
             elif len([adj for adj in robosuite.synthetic_comparisons.less_speed_adjs if adj in nl_comp]) > 0:
@@ -252,30 +259,38 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                 target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
+                else:
+                    num_incorrect += 1
 
             elif len([adj for adj in robosuite.synthetic_comparisons.less_height_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [height(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [height(target_traj[t]) for t in range(len(target_traj))]
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
+                else:
+                    num_incorrect += 1
 
             elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
                 ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_bottle(target_traj[t]) for t in range(len(target_traj))]
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
+                else:
+                    num_incorrect += 1
 
             elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
                 ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
+                else:
+                    num_incorrect += 1
             else:
-                print("THIS SHOULDN'T BE PRINTED. ALL STATEMENTS SHOULD FALL INTO ABOVE.")
-                print("problematic nl_comp:", nl_comp)
+                print("THIS CASE CATCHES GT REWARD COMPARISONS (since we don't have access to rewards.")
+                print("gt_reward nl_comp:", nl_comp)
 
     print("num_correct:", num_correct)
-    print("accuracy:", num_correct / (n_trajs * len(nl_comps)))
+    print("accuracy:", num_correct / (num_correct+num_incorrect))
 
 
 if __name__ == '__main__':
