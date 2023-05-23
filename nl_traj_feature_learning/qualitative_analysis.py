@@ -272,6 +272,7 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     num_correct += 1
             else:
                 print("THIS SHOULDN'T BE PRINTED. ALL STATEMENTS SHOULD FALL INTO ABOVE.")
+                print("problematic nl_comp:", nl_comp)
 
     print("num_correct:", num_correct)
     print("accuracy:", num_correct / (n_trajs * len(nl_comps)))
