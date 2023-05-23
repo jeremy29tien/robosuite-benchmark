@@ -157,7 +157,8 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
             traj = torch.as_tensor(trajectories[i, :, :], dtype=torch.float32, device=device)
             encoded_traj, _, _, _, _ = model((traj, traj, nl_embedding))
             cos_similarity = F.cosine_similarity(encoded_target_traj, encoded_traj).item()
-            dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_traj)
+            # dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_traj)
+            dot_prod = torch.dot(encoded_target_traj, encoded_traj)
             log_likelihood = logsigmoid(dot_prod).item()
             if cos_similarity > max_cos_similarity:
                 max_cos_similarity = cos_similarity
