@@ -139,7 +139,8 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
 
     reference_traj = torch.unsqueeze(torch.as_tensor(reference_traj, dtype=torch.float32, device=device), 0)
     nl_embedding = torch.unsqueeze(torch.as_tensor(nl_embedding, dtype=torch.float32, device=device), 0)
-    encoded_ref_traj, _, encoded_comp_str, _, _ = model((reference_traj, reference_traj, nl_embedding))
+    with torch.no_grad():
+        encoded_ref_traj, _, encoded_comp_str, _, _ = model((reference_traj, reference_traj, nl_embedding))
 
     # This is the traj we are looking for.
     encoded_target_traj = encoded_ref_traj + encoded_comp_str
@@ -194,8 +195,8 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
     #                 print("max sim so far at:", policy_path)
     #                 print("i:", i)
 
-    print("max cos similarity:", max_cos_similarity)
-    print("max_log_likelihood:", max_log_likelihood)
+    # print("max cos similarity:", max_cos_similarity)
+    # print("max_log_likelihood:", max_log_likelihood)
 
     return max_cos_similarity_traj, max_log_likelihood_traj
 
@@ -210,6 +211,7 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
 
     for ref_traj in ref_trajs:
         for nl_comp, nl_embedding in zip(nl_comps, nl_embeddings):
+            print("Adding embedding for", nl_comp)
             max_cos_similarity_traj, max_log_likelihood_traj = add_embeddings(model, device, trajectories, ref_traj, nl_embedding)
             if similarity_metric == 'log_likelihood':
                 target_traj = max_log_likelihood_traj
