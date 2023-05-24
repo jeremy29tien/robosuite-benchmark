@@ -142,6 +142,9 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
     with torch.no_grad():
         encoded_ref_traj, _, encoded_comp_str, _, _ = model((reference_traj, reference_traj, nl_embedding))
 
+    print("encoded_ref_traj:", encoded_ref_traj)
+    print("encoded_comp_str:", encoded_comp_str)
+
     # This is the traj we are looking for.
     encoded_target_traj = encoded_ref_traj + encoded_comp_str
 
