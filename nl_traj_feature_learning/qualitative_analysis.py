@@ -148,6 +148,8 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
     # This is the traj we are looking for.
     encoded_target_traj = encoded_ref_traj + encoded_comp_str
 
+    print("encoded_target_traj:", encoded_target_traj)
+
     max_cos_similarity = -1
     max_log_likelihood = -1e-5
     max_cos_similarity_traj = None
@@ -160,6 +162,8 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
         for i in range(trajectories.shape[0]):
             traj = torch.unsqueeze(torch.as_tensor(trajectories[i, :, :], dtype=torch.float32, device=device), 0)
             encoded_traj, _, _, _, _ = model((traj, traj, nl_embedding))
+
+            print("encoded_traj:", encoded_traj)
 
             cos_similarity = F.cosine_similarity(encoded_target_traj, encoded_traj).item()
             dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_traj)
