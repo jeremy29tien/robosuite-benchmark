@@ -167,11 +167,11 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
             dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_traj)
             log_likelihood = logsigmoid(dot_prod).item()
             if cos_similarity > max_cos_similarity:
-                # print("encoded_traj:", encoded_traj)
+                print("encoded_traj:", encoded_traj)
                 max_cos_similarity = cos_similarity
                 max_cos_similarity_traj = traj.detach().cpu().numpy()
             if log_likelihood > max_log_likelihood:
-                print("encoded_traj:", encoded_traj)
+                # print("encoded_traj:", encoded_traj)
                 max_log_likelihood = log_likelihood
                 max_log_likelihood_traj = traj.detach().cpu().numpy()
 
@@ -312,8 +312,9 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                 else:
                     num_incorrect += 1
             else:
-                print("THIS CASE CATCHES GT REWARD COMPARISONS (since we don't have access to rewards.")
-                print("gt_reward nl_comp:", nl_comp)
+                # print("THIS CASE CATCHES GT REWARD COMPARISONS (since we don't have access to rewards.")
+                # print("gt_reward nl_comp:", nl_comp)
+                print()
 
     print("num_correct:", num_correct)
     print("accuracy:", num_correct / (num_correct+num_incorrect))
