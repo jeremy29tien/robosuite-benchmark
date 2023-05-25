@@ -128,7 +128,7 @@ def print_embedding_statistics(model, device, data_dir, val=False):
     print("neg_dot_prods_std:", neg_dot_prods_std)
 
 
-def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
+def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, similarity_metric):
     # reference_policy_obs = np.load(os.path.join(reference_policy_dir, "traj_observations.npy"))
     # reference_policy_act = np.load(os.path.join(reference_policy_dir, "traj_actions.npy"))
     # reference_policy_trajs = np.concatenate((reference_policy_obs, reference_policy_act), axis=-1)
@@ -150,10 +150,13 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
 
     print("encoded_target_traj:", encoded_target_traj)
 
-    max_cos_similarity = -1
-    max_log_likelihood = -1e-5
-    max_cos_similarity_traj = None
-    max_log_likelihood_traj = None
+    # max_cos_similarity = -1
+    # max_log_likelihood = -1e-5
+    # max_cos_similarity_traj = None
+    # max_log_likelihood_traj = None
+
+    max_sim_metric = -1e-5
+    max_sim_traj = None
 
     max_sim_policy = ''
     logsigmoid = nn.LogSigmoid()
@@ -163,19 +166,26 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
             traj = torch.unsqueeze(torch.as_tensor(trajectories[i, :, :], dtype=torch.float32, device=device), 0)
             encoded_traj, _, _, _, _ = model((traj, traj, nl_embedding))
 
-            cos_similarity = F.cosine_similarity(encoded_comp_str, encoded_traj - encoded_ref_traj).item()
-            dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_traj)
-            log_likelihood = logsigmoid(dot_prod).item()
-            if cos_similarity > max_cos_similarity:
-                print("encoded_traj:", encoded_traj)
-                print("encoded_traj - encoded_ref_traj:", encoded_traj - encoded_ref_traj)
-                print("cos_similarity:", cos_similarity)
-                max_cos_similarity = cos_similarity
-                max_cos_similarity_traj = traj.detach().cpu().numpy()
-            if log_likelihood > max_log_likelihood:
-                # print("encoded_traj:", encoded_traj)
-                max_log_likelihood = log_likelihood
-                max_log_likelihood_traj = traj.detach().cpu().numpy()
+            if similarity_metric == 'cos_similarity':
+                cos_similarity = F.cosine_similarity(encoded_comp_str, encoded_traj - encoded_ref_traj).item()
+                if cos_similarity > max_sim_metric:
+                    print("encoded_traj:", encoded_traj)
+                    print("encoded_traj - encoded_ref_traj:", encoded_traj - encoded_ref_traj)
+                    print("cos_similarity:", cos_similarity)
+                    max_sim_metric = cos_similarity
+                    max_sim_traj = traj.detach().cpu().numpy()
+
+            elif similarity_metric == 'log_likelihood':
+                dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_traj)
+                log_likelihood = logsigmoid(dot_prod).item()
+                if log_likelihood > max_sim_metric:
+                    # print("encoded_traj:", encoded_traj)
+                    max_sim_metric = log_likelihood
+                    max_sim_traj = traj.detach().cpu().numpy()
+
+            else:
+                raise NotImplementedError('That similarity metric is not supported yet :(')
+
 
     ### NOTE: BELOW CONTAINS THE OLD IMPLEMENTATION
     # for config in os.listdir(policy_dir):
@@ -207,7 +217,7 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
     # print("max cos similarity:", max_cos_similarity)
     # print("max_log_likelihood:", max_log_likelihood)
 
-    return max_cos_similarity_traj, max_log_likelihood_traj
+    return max_sim_traj, max_sim_metric
 
 
 def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embeddings, similarity_metric='log_likelihood'):
@@ -217,16 +227,13 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
 
     num_correct = 0
     num_incorrect = 0
+    max_similarities = []
 
     for ref_traj in ref_trajs:
         for nl_comp, nl_embedding in zip(nl_comps, nl_embeddings):
             print("Adding embedding for", nl_comp)
-            max_cos_similarity_traj, max_log_likelihood_traj = add_embeddings(model, device, trajectories, ref_traj, nl_embedding)
-            if similarity_metric == 'log_likelihood':
-                target_traj = max_log_likelihood_traj
-            else:
-                target_traj = max_cos_similarity_traj
-
+            target_traj, max_similarity = add_embeddings(model, device, trajectories, ref_traj, nl_embedding, similarity_metric)
+            max_similarities.append(max_similarity)
             # Greater
             if len([adj for adj in robosuite.synthetic_comparisons.greater_speed_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [speed(ref_traj[t]) for t in range(len(ref_traj))]
@@ -321,6 +328,7 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
 
     print("num_correct:", num_correct)
     print("accuracy:", num_correct / (num_correct+num_incorrect))
+    print("average max similarity:", np.mean(max_similarities))
 
 
 if __name__ == '__main__':
