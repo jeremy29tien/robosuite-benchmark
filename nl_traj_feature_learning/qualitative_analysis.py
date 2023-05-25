@@ -142,7 +142,7 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
     with torch.no_grad():
         encoded_ref_traj, _, encoded_comp_str, _, _ = model((reference_traj, reference_traj, nl_embedding))
 
-    print("reference_traj:", reference_traj)
+    # print("reference_traj:", reference_traj)
     print("encoded_ref_traj:", encoded_ref_traj)
     print("encoded_comp_str:", encoded_comp_str)
 
@@ -161,6 +161,7 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
     else:
         max_sim_metric = -1e-5
     max_sim_traj = None
+    encoded_max_sim_traj = None
 
     max_sim_policy = ''
     logsigmoid = nn.LogSigmoid()
@@ -178,6 +179,7 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
                     # print("cos_similarity:", cos_similarity)
                     max_sim_metric = cos_similarity
                     max_sim_traj = traj.squeeze().detach().cpu().numpy()
+                    encoded_max_sim_traj = encoded_traj.squeeze().detach().cpu().numpy()
 
             elif similarity_metric == 'log_likelihood':
                 dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_traj)
@@ -186,6 +188,7 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
                     # print("encoded_traj:", encoded_traj)
                     max_sim_metric = log_likelihood
                     max_sim_traj = traj.squeeze().detach().cpu().numpy()
+                    encoded_max_sim_traj = encoded_traj.squeeze().detach().cpu().numpy()
 
             else:
                 raise NotImplementedError('That similarity metric is not supported yet :(')
@@ -221,8 +224,9 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
     # print("max cos similarity:", max_cos_similarity)
     # print("max_log_likelihood:", max_log_likelihood)
 
-    print("max_sim_traj:", max_sim_traj)
-    print(similarity_metric+":", max_sim_metric)
+    # print("max_sim_traj:", max_sim_traj)
+    print("encoded_max_sim_traj:", encoded_max_sim_traj)
+    print("max "+similarity_metric+":", max_sim_metric)
     return max_sim_traj, max_sim_metric
 
 
