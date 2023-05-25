@@ -314,7 +314,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             else:
                 # print("THIS CASE CATCHES GT REWARD COMPARISONS (since we don't have access to rewards.")
                 # print("gt_reward nl_comp:", nl_comp)
-                print()
+                pass
+            print('\n')
 
     print("num_correct:", num_correct)
     print("accuracy:", num_correct / (num_correct+num_incorrect))
