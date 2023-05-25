@@ -249,8 +249,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
 
                 # print("nl_comp:", nl_comp)
                 # print("nl_embedding:", nl_embedding)
-                # print("ref_traj speed:", np.mean(ref_traj_feature_values))
-                # print("target_traj speed:", np.mean(target_traj_feature_values))
+                print("ref_traj speed:", np.mean(ref_traj_feature_values))
+                print("target_traj speed:", np.mean(target_traj_feature_values))
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
                     print("Speed is indeed greater.")
@@ -264,8 +264,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
 
                 # print("nl_comp:", nl_comp)
                 # print("nl_embedding:", nl_embedding)
-                # print("ref_traj height:", np.mean(ref_traj_feature_values))
-                # print("target_traj height:", np.mean(target_traj_feature_values))
+                print("ref_traj height:", np.mean(ref_traj_feature_values))
+                print("target_traj height:", np.mean(target_traj_feature_values))
 
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
@@ -277,6 +277,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
                 ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_bottle(target_traj[t]) for t in range(len(target_traj))]
+                print("ref_traj distance from bottle:", np.mean(ref_traj_feature_values))
+                print("target_traj distance from bottle:", np.mean(target_traj_feature_values))
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
                     print("Distance is indeed greater.")
@@ -287,6 +289,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
                 ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
+                print("ref_traj distance from cube:", np.mean(ref_traj_feature_values))
+                print("target_traj distance from cube:", np.mean(target_traj_feature_values))
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
                     print("Distance is indeed greater.")
@@ -303,8 +307,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
 
                 # print("nl_comp:", nl_comp)
                 # print("nl_embedding:", nl_embedding)
-                # print("ref_traj speed:", np.mean(ref_traj_feature_values))
-                # print("target_traj speed:", np.mean(target_traj_feature_values))
+                print("ref_traj speed:", np.mean(ref_traj_feature_values))
+                print("target_traj speed:", np.mean(target_traj_feature_values))
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
                     print("Speed is indeed lesser.")
@@ -318,8 +322,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
 
                 # print("nl_comp:", nl_comp)
                 # print("nl_embedding:", nl_embedding)
-                # print("ref_traj height:", np.mean(ref_traj_feature_values))
-                # print("target_traj height:", np.mean(target_traj_feature_values))
+                print("ref_traj height:", np.mean(ref_traj_feature_values))
+                print("target_traj height:", np.mean(target_traj_feature_values))
 
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
@@ -331,6 +335,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
                 ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_bottle(target_traj[t]) for t in range(len(target_traj))]
+                print("ref_traj distance from bottle:", np.mean(ref_traj_feature_values))
+                print("target_traj distance from bottle:", np.mean(target_traj_feature_values))
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
                     print("Distance is indeed lesser.")
@@ -341,6 +347,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
                 ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
+                print("ref_traj distance from cube:", np.mean(ref_traj_feature_values))
+                print("target_traj distance from cube:", np.mean(target_traj_feature_values))
                 if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
                     num_correct += 1
                     print("Distance is indeed lesser.")
