@@ -155,7 +155,10 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
     # max_cos_similarity_traj = None
     # max_log_likelihood_traj = None
 
-    max_sim_metric = -1e-5
+    if similarity_metric == 'cos_similarity':
+        max_sim_metric = 0
+    else:
+        max_sim_metric = -1e-5
     max_sim_traj = None
 
     max_sim_policy = ''
