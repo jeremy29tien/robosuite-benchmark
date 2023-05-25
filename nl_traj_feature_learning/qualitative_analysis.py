@@ -171,6 +171,8 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
 
             if similarity_metric == 'cos_similarity':
                 cos_similarity = F.cosine_similarity(encoded_comp_str, encoded_traj - encoded_ref_traj).item()
+                if cos_similarity < 0:
+                    print("cos_similarity:", cos_similarity)
                 if cos_similarity > max_sim_metric:
                     print("encoded_traj:", encoded_traj)
                     print("encoded_traj - encoded_ref_traj:", encoded_traj - encoded_ref_traj)
