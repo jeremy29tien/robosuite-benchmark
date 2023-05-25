@@ -243,8 +243,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             if len([adj for adj in robosuite.synthetic_comparisons.greater_speed_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [speed(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
-                print("ref_traj_feature_values:", ref_traj_feature_values)
-                print("target_traj_feature_values:", target_traj_feature_values)
+                print("ref_traj.shape", np.asarray(ref_traj).shape)
+                print("target_traj.shape:", np.asarray(target_traj).shape)
 
                 print("nl_comp:", nl_comp)
                 # print("nl_embedding:", nl_embedding)
@@ -297,8 +297,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             elif len([adj for adj in robosuite.synthetic_comparisons.less_speed_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [speed(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
-                print("ref_traj_feature_values:", ref_traj_feature_values)
-                print("target_traj_feature_values:", target_traj_feature_values)
+                print("ref_traj.shape", np.asarray(ref_traj).shape)
+                print("target_traj.shape:", np.asarray(target_traj).shape)
 
                 print("nl_comp:", nl_comp)
                 # print("nl_embedding:", nl_embedding)
