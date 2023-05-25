@@ -299,7 +299,7 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     print("Speed is indeed lesser.")
                 else:
                     num_incorrect += 1
-                    print("Speed is actually higher.")
+                    print("Speed is actually greater.")
 
             elif len([adj for adj in robosuite.synthetic_comparisons.less_height_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [height(ref_traj[t]) for t in range(len(ref_traj))]
@@ -315,7 +315,7 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     print("Height is indeed lesser.")
                 else:
                     num_incorrect += 1
-                    print("Height is actually higher.")
+                    print("Height is actually greater.")
 
             elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
                 ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
@@ -325,7 +325,7 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     print("Distance is indeed lesser.")
                 else:
                     num_incorrect += 1
-                    print("Distance is actually higher.")
+                    print("Distance is actually greater.")
 
             elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
                 ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
@@ -335,7 +335,7 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     print("Distance is indeed lesser.")
                 else:
                     num_incorrect += 1
-                    print("Distance is actually higher.")
+                    print("Distance is actually greater.")
             else:
                 # print("THIS CASE CATCHES GT REWARD COMPARISONS (since we don't have access to rewards.")
                 # print("gt_reward nl_comp:", nl_comp)
