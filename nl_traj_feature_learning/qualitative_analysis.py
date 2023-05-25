@@ -177,7 +177,7 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
                     print("encoded_traj - encoded_ref_traj:", encoded_traj - encoded_ref_traj)
                     print("cos_similarity:", cos_similarity)
                     max_sim_metric = cos_similarity
-                    max_sim_traj = traj.detach().cpu().numpy()
+                    max_sim_traj = traj.squeeze().detach().cpu().numpy()
 
             elif similarity_metric == 'log_likelihood':
                 dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_traj)
@@ -185,7 +185,7 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
                 if log_likelihood > max_sim_metric:
                     # print("encoded_traj:", encoded_traj)
                     max_sim_metric = log_likelihood
-                    max_sim_traj = traj.detach().cpu().numpy()
+                    max_sim_traj = traj.squeeze().detach().cpu().numpy()
 
             else:
                 raise NotImplementedError('That similarity metric is not supported yet :(')
