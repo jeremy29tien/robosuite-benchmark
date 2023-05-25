@@ -169,6 +169,7 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding):
             if cos_similarity > max_cos_similarity:
                 print("encoded_traj:", encoded_traj)
                 print("encoded_traj - encoded_ref_traj:", encoded_traj - encoded_ref_traj)
+                print("cos_similarity:", cos_similarity)
                 max_cos_similarity = cos_similarity
                 max_cos_similarity_traj = traj.detach().cpu().numpy()
             if log_likelihood > max_log_likelihood:
