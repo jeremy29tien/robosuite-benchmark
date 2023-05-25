@@ -242,11 +242,13 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             # Greater
             if len([adj for adj in robosuite.synthetic_comparisons.greater_speed_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [speed(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
+                print("ref_traj_feature_values:", ref_traj_feature_values)
+                print("target_traj_feature_values:", target_traj_feature_values)
+
                 print("nl_comp:", nl_comp)
                 # print("nl_embedding:", nl_embedding)
                 print("ref_traj speed:", np.mean(ref_traj_feature_values))
-
-                target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
                 print("target_traj speed:", np.mean(target_traj_feature_values))
                 if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
                     num_correct += 1
