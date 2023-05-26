@@ -128,15 +128,76 @@ def print_embedding_statistics(model, device, data_dir, val=False):
     print("neg_dot_prods_std:", neg_dot_prods_std)
 
 
-def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, similarity_metric):
-    # reference_policy_obs = np.load(os.path.join(reference_policy_dir, "traj_observations.npy"))
-    # reference_policy_act = np.load(os.path.join(reference_policy_dir, "traj_actions.npy"))
-    # reference_policy_trajs = np.concatenate((reference_policy_obs, reference_policy_act), axis=-1)
-    # reference_policy_traj = reference_policy_trajs[0]  # We just take the first rollout as our reference.
-    #
-    # comp_str = "Move faster."
-    # bert_embedding = np.load('/home/jeremy/robosuite-benchmark/data/nl-traj/all-pairs/nlcomps.npy')[2]  # "Move faster is the 3rd string in file.
+def find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp, nl_embedding, similarity_metric, trajs_per_policy=3):
+    reference_policy_obs = np.load(os.path.join(reference_policy_dir, "traj_observations.npy"))
+    reference_policy_act = np.load(os.path.join(reference_policy_dir, "traj_actions.npy"))
+    reference_policy_trajs = np.concatenate((reference_policy_obs, reference_policy_act), axis=-1)
+    reference_traj = reference_policy_trajs[0]  # We just take the first rollout as our reference.
 
+    reference_traj = torch.unsqueeze(torch.as_tensor(reference_traj, dtype=torch.float32, device=device), 0)
+    nl_embedding = torch.unsqueeze(torch.as_tensor(nl_embedding, dtype=torch.float32, device=device), 0)
+    with torch.no_grad():
+        encoded_ref_traj, _, encoded_comp_str, _, _ = model((reference_traj, reference_traj, nl_embedding))
+
+    # This is the traj we are looking for.
+    encoded_target_traj = encoded_ref_traj + encoded_comp_str
+
+    print("encoded_ref_traj:", encoded_ref_traj)
+    print("encoded_comp_str:", encoded_comp_str)
+    print("encoded_target_traj:", encoded_target_traj)
+
+    if similarity_metric == 'cos_similarity':
+        max_sim_metric = -1
+    else:
+        max_sim_metric = -1e-5
+    max_sim_policy = ''
+
+    logsigmoid = nn.LogSigmoid()
+
+    for config in os.listdir(policy_dir):
+        policy_path = os.path.join(policy_dir, config)
+        if os.path.isdir(policy_path) and os.listdir(policy_path):  # Check that policy_path is a directory and that directory is not empty
+            # print(policy_path)
+            observations = np.load(os.path.join(policy_path, "traj_observations.npy"))
+            actions = np.load(os.path.join(policy_path, "traj_actions.npy"))
+            rewards = np.load(os.path.join(policy_path, "traj_rewards.npy"))
+            # observations has dimensions (n_trajs, n_timesteps, obs_dimension)
+            trajs = np.concatenate((observations, actions), axis=-1)
+
+            # Downsample
+            trajs = trajs[0:trajs_per_policy]
+            rewards = rewards[0:trajs_per_policy]
+
+            trajs = torch.as_tensor(trajs, dtype=torch.float32, device=device)
+            encoded_trajs, _, _, _, _ = model((trajs, trajs, nl_embedding))
+
+            for i in range(trajs_per_policy):
+
+                if similarity_metric == 'cos_similarity':
+                    cos_similarity = F.cosine_similarity(encoded_comp_str, encoded_trajs[i] - encoded_ref_traj).item()
+                    if cos_similarity > max_sim_metric:
+                        # print("encoded_traj:", encoded_traj)
+                        # print("encoded_traj - encoded_ref_traj:", encoded_traj - encoded_ref_traj)
+                        # print("cos_similarity:", cos_similarity)
+                        max_sim_metric = cos_similarity
+                        max_sim_policy = 'policy: ' + policy_path + '\nrollout: ' + str(i)
+
+                elif similarity_metric == 'log_likelihood':
+                    dot_prod = torch.einsum('ij,ij->i', encoded_target_traj, encoded_trajs[i])
+                    log_likelihood = logsigmoid(dot_prod).item()
+                    if log_likelihood > max_sim_metric:
+                        # print("encoded_traj:", encoded_traj)
+                        max_sim_metric = log_likelihood
+                        max_sim_policy = 'policy: ' + policy_path + '\nrollout: ' + str(i)
+                else:
+                    raise NotImplementedError('That similarity metric is not supported yet :(')
+
+    print("max_sim_policy:", max_sim_policy)
+    print("max "+similarity_metric+":", max_sim_metric)
+    return max_sim_policy, max_sim_metric
+
+
+def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, similarity_metric):
     reference_traj = torch.unsqueeze(torch.as_tensor(reference_traj, dtype=torch.float32, device=device), 0)
     nl_embedding = torch.unsqueeze(torch.as_tensor(nl_embedding, dtype=torch.float32, device=device), 0)
     with torch.no_grad():
@@ -151,11 +212,6 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
 
     print("encoded_target_traj:", encoded_target_traj)
 
-    # max_cos_similarity = -1
-    # max_log_likelihood = -1e-5
-    # max_cos_similarity_traj = None
-    # max_log_likelihood_traj = None
-
     if similarity_metric == 'cos_similarity':
         max_sim_metric = -1
     else:
@@ -163,7 +219,6 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
     max_sim_traj = None
     encoded_max_sim_traj = None
 
-    max_sim_policy = ''
     logsigmoid = nn.LogSigmoid()
 
     with torch.no_grad():
@@ -192,37 +247,6 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
 
             else:
                 raise NotImplementedError('That similarity metric is not supported yet :(')
-
-
-    ### NOTE: BELOW CONTAINS THE OLD IMPLEMENTATION
-    # for config in os.listdir(policy_dir):
-    #     policy_path = os.path.join(policy_dir, config)
-    #     if os.path.isdir(policy_path) and os.listdir(policy_path):  # Check that policy_path is a directory and that directory is not empty
-    #         # print(policy_path)
-    #         observations = np.load(os.path.join(policy_path, "traj_observations.npy"))
-    #         actions = np.load(os.path.join(policy_path, "traj_actions.npy"))
-    #         rewards = np.load(os.path.join(policy_path, "traj_rewards.npy"))
-    #         # observations has dimensions (n_trajs, n_timesteps, obs_dimension)
-    #         trajs = np.concatenate((observations, actions), axis=-1)
-    #
-    #         # Downsample
-    #         trajs = trajs[0:trajs_per_policy]
-    #         rewards = rewards[0:trajs_per_policy]
-    #
-    #         trajs = torch.as_tensor(trajs, dtype=torch.float32)
-    #         encoded_traj, _, _, _, _ = model((trajs, trajs, bert_embedding))
-    #
-    #         for i in range(trajs_per_policy):
-    #             similarity = F.cosine_similarity(encoded_target_traj, encoded_traj[i])
-    #             similarity = similarity.item()
-    #             if similarity > max_similarity:
-    #                 max_similarity = similarity
-    #                 max_sim_policy = policy_path + ' ' + str(i)
-    #                 print("max sim so far at:", policy_path)
-    #                 print("i:", i)
-
-    # print("max cos similarity:", max_cos_similarity)
-    # print("max_log_likelihood:", max_log_likelihood)
 
     # print("max_sim_traj:", max_sim_traj)
     print("encoded_max_sim_traj:", encoded_max_sim_traj)
