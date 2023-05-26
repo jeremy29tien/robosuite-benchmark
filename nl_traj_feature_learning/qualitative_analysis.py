@@ -400,8 +400,17 @@ if __name__ == '__main__':
     parser.add_argument('--model-path', type=str, default='', help='')
     parser.add_argument('--data-dir', type=str, default='', help='')
     parser.add_argument('--val', action="store_true", help='')
-    parser.add_argument('--n-trajs', type=int, default=0, help='')
     parser.add_argument('--similarity-metric', type=str, default='', help='')
+
+    # Arguments needed for --analyze
+    parser.add_argument('--analyze', action="store_true", help='')
+    parser.add_argument('--n-trajs', type=int, default=0, help='')
+
+    # Arguments needed for --visualize
+    parser.add_argument('--visualize', action="store_true", help='')
+    parser.add_argument('--all-policy-dir', type=str, default='', help='')
+    parser.add_argument('--reference-policy-dir', type=str, default='', help='')
+    parser.add_argument('--command-string', type=str, default='', help='')
 
     args = parser.parse_args()
 
@@ -411,7 +420,6 @@ if __name__ == '__main__':
     model_path = args.model_path
     data_dir = args.data_dir
     val = args.val  # Whether or not to use validation (default train)
-    n_trajs = args.n_trajs
     similarity_metric = args.similarity_metric
 
     model, device = load_model(model_path)
@@ -430,7 +438,26 @@ if __name__ == '__main__':
     nl_comps = list(set(nl_comps))
     nl_embeddings = preprocess_strings('', 500, nl_comps)
 
-    run_accuracy_check(model, device, n_trajs, trajs, nl_comps, nl_embeddings, similarity_metric)
+    if args.analyze:
+        n_trajs = args.n_trajs
+        run_accuracy_check(model, device, n_trajs, trajs, nl_comps, nl_embeddings, similarity_metric)
+    elif args.visualize:
+        policy_dir = args.all_policy_dir
+        reference_policy_dir = args.reference_policy_dir
+        nl_comp = args.command_string
+
+        nl_embedding = ''
+        assert len(nl_comps) == len(nl_embeddings)
+        for i in range(len(nl_comps)):
+            if nl_comps[i] == nl_comp:
+                nl_embedding = nl_embeddings[i]
+                break
+        if nl_embedding == '':
+            raise ValueError("--command-string must be a valid string.")
+
+        find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp, nl_embedding, similarity_metric)
+    else:
+        print("Need to specify either --analyze or --visualize.")
 
 
 
