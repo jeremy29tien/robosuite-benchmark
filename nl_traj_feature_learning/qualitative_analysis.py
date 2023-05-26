@@ -446,13 +446,13 @@ if __name__ == '__main__':
         reference_policy_dir = args.reference_policy_dir
         nl_comp = args.command_string
 
-        nl_embedding = ''
+        nl_embedding = None
         assert len(nl_comps) == len(nl_embeddings)
         for i in range(len(nl_comps)):
             if nl_comps[i] == nl_comp:
                 nl_embedding = nl_embeddings[i]
                 break
-        if nl_embedding == '':
+        if nl_embedding is None:
             raise ValueError("--command-string must be a valid string.")
 
         find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp, nl_embedding, similarity_metric)
