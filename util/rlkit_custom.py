@@ -427,7 +427,7 @@ def rollout(
     while path_length < max_path_length:
         # TEMP FIX FOR POLICIES TRAINED WITH OBSERVATION_DIM = 64 (WITHOUT GRASPING FEATURE)
         # WHEN WE WANT OBSERVATION_DIM=65.
-        without_grasp_o = o[0:24] + o[25:]
+        without_grasp_o = np.concatenate((o[0:24], o[25:]), axis=0)
         # a, agent_info = agent.get_action(o)
         a, agent_info = agent.get_action(without_grasp_o)
         next_o, r, d, env_info = env.step(a)
