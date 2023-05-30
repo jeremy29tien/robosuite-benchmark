@@ -39,7 +39,7 @@ def get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward, noise_augmenta
     return out
 
 
-def generate_dataset(trajs, traj_rewards, noise_augmentation=0, id_mapping=False, all_pairs=True, dataset_size=0):
+def generate_dataset(trajs, noise_augmentation=0, id_mapping=False, all_pairs=True, dataset_size=0):
     dataset_traj_as = []
     dataset_traj_bs = []
     dataset_comps = []
@@ -47,7 +47,7 @@ def generate_dataset(trajs, traj_rewards, noise_augmentation=0, id_mapping=False
 
     # Prep work for noisy data augmentation
     if noise_augmentation:
-        calc_and_set_global_vars(trajs, traj_rewards)
+        calc_and_set_global_vars(trajs)
 
     if all_pairs:
         print("GENERATING USING ALL-PAIRS METHOD.")
@@ -56,11 +56,9 @@ def generate_dataset(trajs, traj_rewards, noise_augmentation=0, id_mapping=False
             for j in range(i+1, num_trajectories):
                 traj_i = trajs[i]
                 traj_j = trajs[j]
-                traj_i_reward = traj_rewards[i]
-                traj_j_reward = traj_rewards[j]
 
-                comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward, noise_augmentation=noise_augmentation)
-                flipped_comps = get_comparisons(traj_j, traj_i, traj_j_reward, traj_i_reward, noise_augmentation=noise_augmentation)
+                comps = get_comparisons(traj_i, traj_j, noise_augmentation=noise_augmentation)
+                flipped_comps = get_comparisons(traj_j, traj_i, noise_augmentation=noise_augmentation)
 
                 if id_mapping:  # With this option, we store the indexes of the `trajs` array rather than the actual trajectory
                     for c in comps:
@@ -93,11 +91,9 @@ def generate_dataset(trajs, traj_rewards, noise_augmentation=0, id_mapping=False
 
             traj_i = trajs[i]
             traj_j = trajs[j]
-            traj_i_reward = traj_rewards[i]
-            traj_j_reward = traj_rewards[j]
 
-            comps = get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward, noise_augmentation=noise_augmentation)
-            flipped_comps = get_comparisons(traj_j, traj_i, traj_j_reward, traj_i_reward, noise_augmentation=noise_augmentation)
+            comps = get_comparisons(traj_i, traj_j, noise_augmentation=noise_augmentation)
+            flipped_comps = get_comparisons(traj_j, traj_i, noise_augmentation=noise_augmentation)
 
             if id_mapping:  # With this option, we store the indexes of the `trajs` array rather than the actual trajectory
                 for c in comps:
@@ -150,7 +146,7 @@ if __name__ == '__main__':
 
     print("GETTING TRAJECTORY ROLLOUTS...")
     trajectories = []
-    trajectory_rewards = []
+    # trajectory_rewards = []
     for config in os.listdir(policy_dir):
         policy_path = os.path.join(policy_dir, config)
         if os.path.isdir(policy_path) and os.listdir(
@@ -158,50 +154,56 @@ if __name__ == '__main__':
             print(policy_path)
             observations = np.load(os.path.join(policy_path, "traj_observations.npy"))
             actions = np.load(os.path.join(policy_path, "traj_actions.npy"))
-            rewards = np.load(os.path.join(policy_path, "traj_rewards.npy"))
+
+            # WARNING: rewards here is the reward given by the custom weights (0, 1, 2) that we used to train the
+            # diverse policies, NOT the true ground truth Lift environment reward.
+            # rewards = np.load(os.path.join(policy_path, "traj_rewards.npy"))
+
             # observations has dimensions (n_trajs, n_timesteps, obs_dimension)
             trajs = np.concatenate((observations, actions), axis=-1)
 
             # Downsample
             trajs = trajs[0:trajs_per_policy]
-            rewards = rewards[0:trajs_per_policy]
+            # rewards = rewards[0:trajs_per_policy]
 
             # NOTE: We use extend rather than append because we don't want to add an
             # additional dimension across the policies.
             trajectories.extend(trajs)
-            trajectory_rewards.extend(rewards)
+            # trajectory_rewards.extend(rewards)
 
     trajectories = np.asarray(trajectories)
-    trajectory_rewards = np.asarray(trajectory_rewards)
+    # trajectory_rewards = np.asarray(trajectory_rewards)
     num_trajectories = trajectories.shape[0]
 
     # Shuffle
     p = np.random.permutation(num_trajectories)
     trajectories = trajectories[p]
-    trajectory_rewards = trajectory_rewards[p]
+    # trajectory_rewards = trajectory_rewards[p]
 
     # Split
     split_i = int(np.ceil(val_split*num_trajectories))
     val_trajectories = trajectories[0:split_i]
-    val_trajectory_rewards = trajectory_rewards[0:split_i]
+    # val_trajectory_rewards = trajectory_rewards[0:split_i]
     train_trajectories = trajectories[split_i:]
-    train_trajectory_rewards = trajectory_rewards[split_i:]
+    # train_trajectory_rewards = trajectory_rewards[split_i:]
 
     print("NUM_TRAJECTORIES:", num_trajectories)
     print("NUM TRAIN TRAJECTORIES:", len(train_trajectories))
     print("NUM VAL TRAJECTORIES:", len(val_trajectories))
     print("COMPILING DATASET:")
 
-    train_traj_as, train_traj_bs, train_comps = generate_dataset(train_trajectories, train_trajectory_rewards,
+    train_traj_as, train_traj_bs, train_comps = generate_dataset(train_trajectories,
                                                                  noise_augmentation=noise_augmentation, id_mapping=id_mapping, all_pairs=all_pairs, dataset_size=dataset_size)
-    val_traj_as, val_traj_bs, val_comps = generate_dataset(val_trajectories, val_trajectory_rewards,
+    val_traj_as, val_traj_bs, val_comps = generate_dataset(val_trajectories,
                                                            id_mapping=id_mapping, all_pairs=True)
 
     if id_mapping:
         np.save(os.path.join(output_dir, 'train/traj_a_indexes.npy'), train_traj_as)
         np.save(os.path.join(output_dir, 'train/traj_b_indexes.npy'), train_traj_bs)
         np.save(os.path.join(output_dir, 'train/trajs.npy'), train_trajectories)
-        # TODO: save trajectory rewards too.
+        # NOT_TODO: save trajectory rewards too.
+        # NOTE: No longer any need to save trajectory rewards, since trajectories contain all info to reconstruct
+        # ground truth reward (using robosuite.environments.manipulation.lift_features.gt_reward).
         with open(os.path.join(output_dir, 'train/nlcomps.json'), 'w') as f:
             json.dump(train_comps, f)
         np.save(os.path.join(output_dir, 'val/traj_a_indexes.npy'), val_traj_as)
