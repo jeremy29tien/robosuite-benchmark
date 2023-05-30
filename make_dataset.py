@@ -7,32 +7,20 @@ import os
 from robosuite.synthetic_comparisons import generate_synthetic_comparisons_commands, generate_noisyaugmented_synthetic_comparisons_commands, calc_and_set_global_vars
 
 
-def get_comparisons(traj_i, traj_j, traj_i_reward, traj_j_reward, noise_augmentation=0):
+def get_comparisons(traj_i, traj_j, noise_augmentation=0):
     out = []
     if noise_augmentation == 0:
-        gt_reward_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
-                                                                           traj_j_reward, 'gt_reward')
-        speed_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward, traj_j_reward,
-                                                                       'speed')
-        height_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward, traj_j_reward,
-                                                                        'height')
-        distance_to_bottle_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
-                                                                                    traj_j_reward,
-                                                                                    'distance_to_bottle')
-        distance_to_cube_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
-                                                                                  traj_j_reward, 'distance_to_cube')
+        gt_reward_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, 'gt_reward')
+        speed_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, 'speed')
+        height_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, 'height')
+        distance_to_bottle_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, 'distance_to_bottle')
+        distance_to_cube_comps = generate_synthetic_comparisons_commands(traj_i, traj_j, 'distance_to_cube')
     else:
-        gt_reward_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
-                                                                           traj_j_reward, 'gt_reward', n_duplicates=noise_augmentation)
-        speed_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward, traj_j_reward,
-                                                                       'speed', n_duplicates=noise_augmentation)
-        height_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward, traj_j_reward,
-                                                                        'height', n_duplicates=noise_augmentation)
-        distance_to_bottle_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
-                                                                                    traj_j_reward,
-                                                                                    'distance_to_bottle', n_duplicates=noise_augmentation)
-        distance_to_cube_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, traj_i_reward,
-                                                                                  traj_j_reward, 'distance_to_cube', n_duplicates=noise_augmentation)
+        gt_reward_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, 'gt_reward', n_duplicates=noise_augmentation)
+        speed_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, 'speed', n_duplicates=noise_augmentation)
+        height_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, 'height', n_duplicates=noise_augmentation)
+        distance_to_bottle_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, 'distance_to_bottle', n_duplicates=noise_augmentation)
+        distance_to_cube_comps = generate_noisyaugmented_synthetic_comparisons_commands(traj_i, traj_j, 'distance_to_cube', n_duplicates=noise_augmentation)
 
     for c in gt_reward_comps + speed_comps + height_comps + distance_to_bottle_comps + distance_to_cube_comps:
         out.append(c)
