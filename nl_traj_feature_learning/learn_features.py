@@ -9,7 +9,7 @@ from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 import argparse
 import os
 
-STATE_DIM = 64
+STATE_DIM = 65
 ACTION_DIM = 4  # NOTE: we use OSC_POSITION as our controller
 BERT_OUTPUT_DIM = 768
 
