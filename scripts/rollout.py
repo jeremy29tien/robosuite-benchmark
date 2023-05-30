@@ -88,14 +88,24 @@ if __name__ == "__main__":
         controller_config = load_controller_config(custom_fpath=controller)
 
     # Create env
-    env_suite = suite.make(**env_args,
-                           controller_configs=controller_config,
-                           has_renderer=not args.record_video,
-                           has_offscreen_renderer=args.record_video,
-                           use_object_obs=True,
-                           use_camera_obs=args.record_video,
-                           reward_shaping=True
-                           )
+    if args.output_dir is not None:
+        env_suite = suite.make(**env_args,
+                               controller_configs=controller_config,
+                               has_renderer=False,
+                               has_offscreen_renderer=False,
+                               use_object_obs=True,
+                               use_camera_obs=False,
+                               reward_shaping=True
+                               )
+    else:
+        env_suite = suite.make(**env_args,
+                               controller_configs=controller_config,
+                               has_renderer=not args.record_video,
+                               has_offscreen_renderer=args.record_video,
+                               use_object_obs=True,
+                               use_camera_obs=args.record_video,
+                               reward_shaping=True
+                               )
     
     # Make sure we only pass in the proprio and object obs (no images)
     keys = ["object-state"]
@@ -106,14 +116,27 @@ if __name__ == "__main__":
     env = GymWrapper(env_suite, keys=keys)
 
     # Run rollout
-    simulate_policy(
-        env=env,
-        model_path=model_fpath,
-        horizon=env_args["horizon"],
-        render=not args.record_video,
-        video_writer=video_writer,
-        num_episodes=args.num_episodes,
-        printout=True,
-        use_gpu=args.gpu,
-        output_dir=args.output_dir
-    )
+    if args.output_dir is not None:
+        simulate_policy(
+            env=env,
+            model_path=model_fpath,
+            horizon=env_args["horizon"],
+            render=False,
+            video_writer=video_writer,
+            num_episodes=args.num_episodes,
+            printout=True,
+            use_gpu=args.gpu,
+            output_dir=args.output_dir
+        )
+    else:
+        simulate_policy(
+            env=env,
+            model_path=model_fpath,
+            horizon=env_args["horizon"],
+            render=not args.record_video,
+            video_writer=video_writer,
+            num_episodes=args.num_episodes,
+            printout=True,
+            use_gpu=args.gpu,
+            output_dir=args.output_dir
+        )
