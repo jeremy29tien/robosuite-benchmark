@@ -10,7 +10,7 @@ from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 from gpu_utils import determine_default_torch_device
 import robosuite.synthetic_comparisons
-from robosuite.environments.manipulation.lift_features import speed, height, distance_to_bottle, distance_to_cube
+from robosuite.environments.manipulation.lift_features import gt_reward, speed, height, distance_to_bottle, distance_to_cube
 from bert_preprocessing import preprocess_strings
 
 
@@ -269,7 +269,19 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             target_traj, max_similarity = add_embeddings(model, device, trajectories, ref_traj, nl_embedding, similarity_metric)
             max_similarities.append(max_similarity)
             # Greater
-            if len([adj for adj in robosuite.synthetic_comparisons.greater_speed_adjs if adj in nl_comp]) > 0:
+            if len([adj for adj in robosuite.synthetic_comparisons.greater_gtreward_adjs if adj in nl_comp]) > 0:
+                ref_traj_feature_values = [gt_reward(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [gt_reward(target_traj[t]) for t in range(len(target_traj))]
+                print("ref_traj gt_reward:", np.mean(ref_traj_feature_values))
+                print("target_traj gt_reward:", np.mean(target_traj_feature_values))
+                if np.mean(target_traj_feature_values) > np.mean(ref_traj_feature_values):
+                    num_correct += 1
+                    print("GT reward is indeed greater.")
+                else:
+                    num_incorrect += 1
+                    print("GT reward is actually lesser.")
+
+            elif len([adj for adj in robosuite.synthetic_comparisons.greater_speed_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [speed(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
                 # print("ref_traj.shape", np.asarray(ref_traj).shape)
@@ -327,6 +339,18 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     print("Distance is actually lesser.")
 
             # Lesser
+            elif len([adj for adj in robosuite.synthetic_comparisons.less_gtreward_adjs if adj in nl_comp]) > 0:
+                ref_traj_feature_values = [gt_reward(ref_traj[t]) for t in range(len(ref_traj))]
+                target_traj_feature_values = [gt_reward(target_traj[t]) for t in range(len(target_traj))]
+                print("ref_traj gt_reward:", np.mean(ref_traj_feature_values))
+                print("target_traj gt_reward:", np.mean(target_traj_feature_values))
+                if np.mean(target_traj_feature_values) < np.mean(ref_traj_feature_values):
+                    num_correct += 1
+                    print("GT reward is indeed lesser.")
+                else:
+                    num_incorrect += 1
+                    print("GT reward is actually greater.")
+
             elif len([adj for adj in robosuite.synthetic_comparisons.less_speed_adjs if adj in nl_comp]) > 0:
                 ref_traj_feature_values = [speed(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [speed(target_traj[t]) for t in range(len(target_traj))]
@@ -384,9 +408,9 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     num_incorrect += 1
                     print("Distance is actually greater.")
             else:
-                # print("THIS CASE CATCHES GT REWARD COMPARISONS (since we don't have access to rewards.")
+                print("THIS SHOULD NOT BE PRINTED.")
+                raise ValueError("Unrecognized NL command.")
                 # print("gt_reward nl_comp:", nl_comp)
-                pass
             print('\n')
 
     print("num_correct:", num_correct)
