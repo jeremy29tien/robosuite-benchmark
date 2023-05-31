@@ -115,6 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('--id-mapping', action="store_true", help='')
     parser.add_argument('--all-pairs', action="store_true", help='')
     parser.add_argument('--trajs-per-policy', type=int, default=5, help='')
+    parser.add_argument('--trajs-per-expert-policy', type=int, default=5, help='')
     parser.add_argument('--val-split', type=float, default=0.1, help='')
     parser.add_argument('--seed', type=int, default=0, help='')
 
@@ -127,6 +128,7 @@ if __name__ == '__main__':
     dataset_size = args.dataset_size
     all_pairs = args.all_pairs
     trajs_per_policy = args.trajs_per_policy
+    trajs_per_expert_policy = args.trajs_per_expert_policy
     val_split = args.val_split
     seed = args.seed
 
@@ -151,8 +153,12 @@ if __name__ == '__main__':
             trajs = np.concatenate((observations, actions), axis=-1)
 
             # Downsample
-            trajs = trajs[0:trajs_per_policy]
-            # rewards = rewards[0:trajs_per_policy]
+            if config == 'expert':
+                trajs = trajs[0:trajs_per_expert_policy]
+                # rewards = rewards[0:trajs_per_expert_policy]
+            else:
+                trajs = trajs[0:trajs_per_policy]
+                # rewards = rewards[0:trajs_per_policy]
 
             # NOTE: We use extend rather than append because we don't want to add an
             # additional dimension across the policies.
