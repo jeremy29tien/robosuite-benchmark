@@ -58,7 +58,7 @@ def load_model(model_path):
     return model, device
 
 
-def run_aprel(gym_env, model_path):
+def run_aprel(seed, gym_env, model_path, traj_file_path):
     encoder_model, device = load_model(model_path)
 
     def feature_func(traj):
@@ -84,14 +84,14 @@ def run_aprel(gym_env, model_path):
 
     env = aprel.Environment(gym_env, feature_func)
 
-    # trajectory_set = aprel.generate_trajectories_randomly(env, num_trajectories=10,
-    #                                                       max_episode_length=300,
-    #                                                       file_name=env_name, seed=0)
+    trajectory_set = aprel.generate_trajectories_randomly(env, num_trajectories=10,
+                                                          max_episode_length=500,
+                                                          file_name="LiftModded", seed=seed)
 
-    # TODO: take trajectories from our training/val data.
-    trajectory_set = None
+    # Take trajectories from our training/val data.
+    # trajectory_set = np.load(traj_file_path)
 
-    # TODO: modify features_dim to reflect the feature dimension (16).
+    # to maybe do: modify features_dim to reflect the feature dimension (16).
     #  This is later used in `aprel.util_funs.get_random_normalized_vector(features_dim)`
     features_dim = len(trajectory_set[0].features)
 
@@ -125,6 +125,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--seed', type=int, default=0, help='')
     parser.add_argument('--model-path', type=str, default='', help='')
+    parser.add_argument('--traj-file-path', type=str, default='', help='')
     # parser.add_argument('--id-mapping', action="store_true", help='')
     # parser.add_argument('--val-split', type=float, default=0.1, help='')
 
@@ -132,8 +133,9 @@ if __name__ == '__main__':
 
     seed = args.seed
     model_path = args.model_path
+    traj_file_path = args.traj_file_path
 
     gym_env = make_gym_env(seed)
 
-    run_aprel(gym_env, model_path)
+    run_aprel(seed, gym_env, model_path, traj_file_path)
 
