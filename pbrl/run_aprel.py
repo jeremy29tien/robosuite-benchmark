@@ -9,6 +9,7 @@ from robosuite.controllers import load_controller_config, ALL_CONTROLLERS
 import torch
 from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
+from nl_traj_feature_learning.learn_features import BERT_OUTPUT_DIM
 
 from gpu_utils import determine_default_torch_device
 import argparse
@@ -74,11 +75,14 @@ def run_aprel(seed, gym_env, model_path, traj_file_path):
             features: a numpy vector corresponding the features of the trajectory
         """
         # print("type(traj[0][0]):", type(traj[0][0]))
-        traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj])
+        print("len(traj):", len(traj))
+        traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
         traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
+        rand_traj = torch.rand(traj.shape)
+        rand_nl = torch.rand(1, BERT_OUTPUT_DIM)
         print("traj tensor:", traj.shape)
         with torch.no_grad():
-            encoded_traj, _, _, _, _ = encoder_model((traj, traj, ""))
+            encoded_traj, _, _, _, _ = encoder_model((traj, rand_traj, rand_nl))
             encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
 
         # TODO: Could add a line that normalizes each feature in the embedding.
