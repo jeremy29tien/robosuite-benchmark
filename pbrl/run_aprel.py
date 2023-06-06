@@ -52,7 +52,10 @@ def load_model(model_path):
     # Load model
     device = torch.device(determine_default_torch_device(not torch.cuda.is_available()))
     print("device:", device)
-    model = torch.load(model_path)
+    if device.type == 'cpu':  # device.type gets the actual string
+        model = torch.load(model_path, map_location=torch.device('cpu'))
+    else:
+        model = torch.load(model_path)
     model.to(device)
     model.eval()
     return model, device
@@ -70,7 +73,8 @@ def run_aprel(seed, gym_env, model_path, traj_file_path):
         Returns:
             features: a numpy vector corresponding the features of the trajectory
         """
-        traj = [t[0] + t[1] for t in traj]
+        # print("type(traj[0][0]):", type(traj[0][0]))
+        traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj])
         traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
         print("traj tensor:", traj.shape)
         with torch.no_grad():
