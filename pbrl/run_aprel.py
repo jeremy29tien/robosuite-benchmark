@@ -32,14 +32,17 @@ def make_gym_env(seed):
     controller_config = load_controller_config(default_controller=controller)
     env = suite.make(**env_kwargs,
                      has_renderer=False,
-                     has_offscreen_renderer=False,
+                     has_offscreen_renderer=True,
                      use_object_obs=True,
-                     use_camera_obs=False,
+                     use_camera_obs=True,
                      reward_shaping=True,
                      controller_configs=controller_config)
 
+    # Make sure we only pass in the proprio and object obs to the Gym env (no images)
+    keys = ["object-state", "robot0_proprio-state"]
+
     # Make it a gym-compatible env
-    gym_env = GymWrapper(env)
+    gym_env = GymWrapper(env, keys=keys)
     obs_dim = gym_env.observation_space.low.size
     action_dim = gym_env.action_space.low.size
 
@@ -76,6 +79,8 @@ def run_aprel(seed, gym_env, model_path, traj_file_path):
         """
         # print("type(traj[0][0]):", type(traj[0][0]))
         print("len(traj):", len(traj))
+        # print(traj[0][0][0:65])
+        # print(gym_env.env._get_observations())
         traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
         traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
         rand_traj = torch.rand(traj.shape)
