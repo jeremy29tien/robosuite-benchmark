@@ -169,7 +169,6 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir=''):
         print('Objective Value: ' + str(objective_values[0]))
 
         responses = true_user.respond(queries[0])
-        print("responses:", type(responses[0]))
 
         # Erdem's fix:
         # belief.update(aprel.Preference(queries[0], responses[0]))
@@ -192,9 +191,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir=''):
                     val_query = aprel.PreferenceQuery([val_trajectory_set[i], val_trajectory_set[j]])
                     val_response = true_user.respond(val_query)
 
-                    ll = np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response)].features))
-                    ll /= np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response)].features)) + np.exp(
-                        np.dot(belief.mean['weights'], val_query.slate[1 - int(val_response)].features))
+                    ll = np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response[0])].features))
+                    ll /= np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response[0])].features)) + np.exp(
+                        np.dot(belief.mean['weights'], val_query.slate[1 - int(val_response[0])].features))
                     ll = np.log(ll)
                     val_lls.append(ll)
             print("validation log likelihood:", np.mean(val_lls))
