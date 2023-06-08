@@ -67,7 +67,7 @@ def load_model(model_path):
     return model, device
 
 
-def run_aprel(seed, gym_env, model_path, human_user, traj_dir=''):
+def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir=''):
     encoder_model, device = load_model(model_path)
 
     def feature_func(traj):
@@ -164,6 +164,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir=''):
 
     query = aprel.PreferenceQuery(trajectory_set[:2])
 
+    log_likelihoods = []
+    val_log_likelihoods = []
     for query_no in range(10):
         queries, objective_values = query_optimizer.optimize('mutual_information', belief, query)
         print('Objective Value: ' + str(objective_values[0]))
@@ -182,6 +184,11 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir=''):
             np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
         ll = np.log(ll)
         print("log likelihood:", ll)
+        log_likelihoods.append(ll)
+
+        if output_dir != '':
+            np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
+            np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
 
         # TODO: Compute log likelihood on the set of val trajectories.
         if val_trajectory_set is not None:
@@ -197,6 +204,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir=''):
                     ll = np.log(ll)
                     val_lls.append(ll)
             print("validation log likelihood:", np.mean(val_lls))
+            val_log_likelihoods.append(np.mean(val_lls))
+            if output_dir != '':
+                np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
 
 
 if __name__ == '__main__':
@@ -206,6 +216,7 @@ if __name__ == '__main__':
     parser.add_argument('--model-path', type=str, default='', help='')
     parser.add_argument('--traj-dir', type=str, default='', help='')
     parser.add_argument('--human-user', action="store_true", help='')
+    parser.add_argument('--output-dir', type=str, default='', help='')
     # parser.add_argument('--val-split', type=float, default=0.1, help='')
 
     args = parser.parse_args()
@@ -214,6 +225,7 @@ if __name__ == '__main__':
     model_path = args.model_path
     traj_dir = args.traj_dir
     human_user = args.human_user
+    output_dir = args.output_dir
 
     gym_env = make_gym_env(seed)
 
