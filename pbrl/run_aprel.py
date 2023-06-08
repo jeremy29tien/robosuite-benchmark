@@ -67,7 +67,7 @@ def load_model(model_path):
     return model, device
 
 
-def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir=''):
+def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='', args=None):
     encoder_model, device = load_model(model_path)
 
     def feature_func(traj):
@@ -166,7 +166,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='')
 
     log_likelihoods = []
     val_log_likelihoods = []
-    for query_no in range(10):
+    for query_no in range(args['num_iterations']):
         queries, objective_values = query_optimizer.optimize('mutual_information', belief, query)
         print('Objective Value: ' + str(objective_values[0]))
 
@@ -217,6 +217,8 @@ if __name__ == '__main__':
     parser.add_argument('--traj-dir', type=str, default='', help='')
     parser.add_argument('--human-user', action="store_true", help='')
     parser.add_argument('--output-dir', type=str, default='', help='')
+    parser.add_argument('--num_iterations', type=int, default=10,
+                        help='Number of iterations in the active learning loop.')
     # parser.add_argument('--val-split', type=float, default=0.1, help='')
 
     args = parser.parse_args()
@@ -226,8 +228,9 @@ if __name__ == '__main__':
     traj_dir = args.traj_dir
     human_user = args.human_user
     output_dir = args.output_dir
+    args = vars(args)
 
     gym_env = make_gym_env(seed)
 
-    run_aprel(seed, gym_env, model_path, human_user, traj_dir, output_dir)
+    run_aprel(seed, gym_env, model_path, human_user, traj_dir, output_dir, args)
 
