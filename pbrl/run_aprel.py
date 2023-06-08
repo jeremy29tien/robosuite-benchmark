@@ -147,11 +147,12 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
 
     query = aprel.PreferenceQuery(trajectory_set[:2])
 
-    for query_no in range(100):
+    for query_no in range(10):
         queries, objective_values = query_optimizer.optimize('mutual_information', belief, query)
         print('Objective Value: ' + str(objective_values[0]))
 
         responses = true_user.respond(queries[0])
+        print("responses:", type(responses[0]))
 
         # Erdem's fix:
         # belief.update(aprel.Preference(queries[0], responses[0]))
@@ -160,14 +161,11 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
 
         print('Estimated user parameters: ' + str(belief.mean))
 
-    log_likelihoods = []
-    for i in range(trajectory_set.size):
-        for j in range(i+1, trajectory_set.size):
-            ll = np.exp(np.dot(belief.mean['weights'], feature_func(trajectory_set[i].trajectory)))
-            ll /= np.exp(np.dot(belief.mean['weights'], feature_func(trajectory_set[i].trajectory))) + np.exp(np.dot(belief.mean['weights'], feature_func(trajectory_set[j].trajectory)))
-            ll = np.log(ll)
-            log_likelihoods.append(ll)
-    print("final mean log likelihood:", np.mean(log_likelihoods))
+        ll = np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
+        ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
+            np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
+        ll = np.log(ll)
+        print("log_likelihood:", ll)
 
 
 if __name__ == '__main__':
