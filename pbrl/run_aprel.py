@@ -5,6 +5,7 @@ import gym
 import robosuite as suite
 from robosuite.wrappers import GymWrapper
 from robosuite.controllers import load_controller_config, ALL_CONTROLLERS
+from robosuite.environments.manipulation.lift_features import gt_reward, speed, height, distance_to_bottle, distance_to_cube
 
 import torch
 from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
@@ -65,7 +66,7 @@ def load_model(model_path):
     return model, device
 
 
-def run_aprel(seed, gym_env, model_path, traj_file_path):
+def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
     encoder_model, device = load_model(model_path)
 
     def feature_func(traj):
@@ -79,8 +80,6 @@ def run_aprel(seed, gym_env, model_path, traj_file_path):
         """
         # print("type(traj[0][0]):", type(traj[0][0]))
         print("len(traj):", len(traj))
-        # print(traj[0][0][0:65])
-        # print(gym_env.env._get_observations())
         traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
         traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
         rand_traj = torch.rand(traj.shape)
@@ -99,18 +98,46 @@ def run_aprel(seed, gym_env, model_path, traj_file_path):
 
     trajectory_set = aprel.generate_trajectories_randomly(env, num_trajectories=10,
                                                           max_episode_length=500,
-                                                          file_name="LiftModded", seed=seed)
+                                                          file_name="LiftModded", restore=True,
+                                                          headless=False, seed=seed)
 
     # Take trajectories from our training/val data.
     # trajectory_set = np.load(traj_file_path)
 
-    # to maybe do: modify features_dim to reflect the feature dimension (16).
-    #  This is later used in `aprel.util_funs.get_random_normalized_vector(features_dim)`
     features_dim = len(trajectory_set[0].features)
 
     query_optimizer = aprel.QueryOptimizerDiscreteTrajectorySet(trajectory_set)
 
-    true_user = aprel.HumanUser(delay=0.5)
+    # Initialize the object for the true human
+    if human_user:
+        true_user = aprel.HumanUser(delay=0.5)
+    else:
+        # Create synthetic user with custom feature func
+        def true_user_feature_func(traj):
+            """Returns the features of the given trajectory, i.e. \Phi(traj).
+
+            Args:
+                traj: List of state-action tuples, e.g. [(state0, action0), (state1, action1), ...]
+
+            Returns:
+                features: a numpy vector corresponding the features of the trajectory
+            """
+            traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
+            features = np.zeros(5)
+            features[0] = gt_reward(traj)
+            features[1] = speed(traj)
+            features[2] = height(traj)
+            features[3] = distance_to_bottle(traj)
+            features[4] = distance_to_cube(traj)
+
+            return features
+
+        # For the 'true' user reward, use a random length 5 vector
+        # (user reward depends on gt_reward, speed, height, distance to bottle, distance to cube)
+        true_features_dim = 5
+        true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
+                       'feature_func': true_user_feature_func}
+        true_user = aprel.CustomFeatureUser(true_params)
 
     params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim)}
     user_model = aprel.SoftmaxUser(params)
@@ -139,7 +166,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0, help='')
     parser.add_argument('--model-path', type=str, default='', help='')
     parser.add_argument('--traj-file-path', type=str, default='', help='')
-    # parser.add_argument('--id-mapping', action="store_true", help='')
+    parser.add_argument('--human-user', action="store_true", help='')
     # parser.add_argument('--val-split', type=float, default=0.1, help='')
 
     args = parser.parse_args()
@@ -147,8 +174,9 @@ if __name__ == '__main__':
     seed = args.seed
     model_path = args.model_path
     traj_file_path = args.traj_file_path
+    human_user = args.human_user
 
     gym_env = make_gym_env(seed)
 
-    run_aprel(seed, gym_env, model_path, traj_file_path)
+    run_aprel(seed, gym_env, model_path, human_user, traj_file_path)
 
