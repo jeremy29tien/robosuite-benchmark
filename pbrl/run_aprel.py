@@ -10,10 +10,11 @@ from robosuite.environments.manipulation.lift_features import gt_reward, speed, 
 import torch
 from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
-from nl_traj_feature_learning.learn_features import BERT_OUTPUT_DIM
+from nl_traj_feature_learning.learn_features import STATE_DIM, ACTION_DIM, BERT_OUTPUT_DIM
 
 from gpu_utils import determine_default_torch_device
 import argparse
+import os
 
 
 def make_gym_env(seed):
@@ -66,7 +67,7 @@ def load_model(model_path):
     return model, device
 
 
-def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
+def run_aprel(seed, gym_env, model_path, human_user, traj_dir=''):
     encoder_model, device = load_model(model_path)
 
     def feature_func(traj):
@@ -78,13 +79,10 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
         Returns:
             features: a numpy vector corresponding the features of the trajectory
         """
-        # print("type(traj[0][0]):", type(traj[0][0]))
-        # print("len(traj):", len(traj))
         traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
         traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
         rand_traj = torch.rand(traj.shape)
         rand_nl = torch.rand(1, BERT_OUTPUT_DIM)
-        # print("traj tensor:", traj.shape)
         with torch.no_grad():
             encoded_traj, _, _, _, _ = encoder_model((traj, rand_traj, rand_nl))
             encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
@@ -96,13 +94,32 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
 
     env = aprel.Environment(gym_env, feature_func)
 
-    trajectory_set = aprel.generate_trajectories_randomly(env, num_trajectories=10,
-                                                          max_episode_length=500,
-                                                          file_name="LiftModded", restore=True,
-                                                          headless=False, seed=seed)
+    if traj_dir == '':
+        trajectory_set = aprel.generate_trajectories_randomly(env, num_trajectories=10,
+                                                              max_episode_length=500,
+                                                              file_name="LiftModded", restore=True,
+                                                              headless=False, seed=seed)
+        val_trajectory_set = None
+    else:
+        # Take trajectories from our training/val data.
+        train_trajs = np.load(os.path.join(traj_dir, 'train/trajs.npy'))
+        val_trajs = np.load(os.path.join(traj_dir, 'val/trajs.npy'))
 
-    # Take trajectories from our training/val data.
-    # trajectory_set = np.load(traj_file_path)
+        train_traj_set = []
+        for train_traj in train_trajs:
+            traj = aprel.Trajectory(env, [(t[0:STATE_DIM], t[STATE_DIM:STATE_DIM+ACTION_DIM]) for t in train_traj])
+            # TODO: once they're available, load trajectories with camera observation
+            train_traj_set.append(traj)
+
+        val_traj_set = []
+        for val_traj in val_trajs:
+            traj = aprel.Trajectory(env, [(t[0:STATE_DIM], t[STATE_DIM:STATE_DIM+ACTION_DIM]) for t in val_traj])
+            # TODO: once they're available, load trajectories with camera observation
+            val_traj_set.append(traj)
+
+
+        trajectory_set = aprel.TrajectorySet(train_traj_set)
+        val_trajectory_set = aprel.TrajectorySet(val_traj_set)
 
     features_dim = len(trajectory_set[0].features)
 
@@ -165,7 +182,22 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
         ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
             np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
         ll = np.log(ll)
-        print("log_likelihood:", ll)
+        print("log likelihood:", ll)
+
+        # TODO: Compute log likelihood on the set of val trajectories.
+        if val_trajectory_set is not None:
+            val_lls = []
+            for i in range(val_trajectory_set.size):
+                for j in range(i+1, val_trajectory_set.size):
+                    val_query = aprel.PreferenceQuery([val_trajectory_set[i], val_trajectory_set[j]])
+                    val_response = true_user.respond(val_query)
+
+                    ll = np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response)].features))
+                    ll /= np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response)].features)) + np.exp(
+                        np.dot(belief.mean['weights'], val_query.slate[1 - int(val_response)].features))
+                    ll = np.log(ll)
+                    val_lls.append(ll)
+            print("validation log likelihood:", np.mean(val_lls))
 
 
 if __name__ == '__main__':
@@ -173,7 +205,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--seed', type=int, default=0, help='')
     parser.add_argument('--model-path', type=str, default='', help='')
-    parser.add_argument('--traj-file-path', type=str, default='', help='')
+    parser.add_argument('--traj-dir', type=str, default='', help='')
     parser.add_argument('--human-user', action="store_true", help='')
     # parser.add_argument('--val-split', type=float, default=0.1, help='')
 
@@ -181,10 +213,10 @@ if __name__ == '__main__':
 
     seed = args.seed
     model_path = args.model_path
-    traj_file_path = args.traj_file_path
+    traj_dir = args.traj_dir
     human_user = args.human_user
 
     gym_env = make_gym_env(seed)
 
-    run_aprel(seed, gym_env, model_path, human_user, traj_file_path)
+    run_aprel(seed, gym_env, model_path, human_user, traj_dir)
 
