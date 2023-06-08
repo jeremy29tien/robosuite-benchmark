@@ -123,12 +123,13 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
                 features: a numpy vector corresponding the features of the trajectory
             """
             traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
+            print("traj:", traj.shape)
             features = np.zeros(5)
-            features[0] = gt_reward(traj)
-            features[1] = speed(traj)
-            features[2] = height(traj)
-            features[3] = distance_to_bottle(traj)
-            features[4] = distance_to_cube(traj)
+            features[0] = np.mean([gt_reward(t) for t in traj])
+            features[1] = np.mean([speed(t) for t in traj])
+            features[2] = np.mean([height(t) for t in traj])
+            features[3] = np.mean([distance_to_bottle(t) for t in traj])
+            features[4] = np.mean([distance_to_cube(t) for t in traj])
 
             return features
 
@@ -137,6 +138,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
         true_features_dim = 5
         true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
                        'feature_func': true_user_feature_func}
+        print("True user parameters:", true_params['weights'])
         true_user = aprel.CustomFeatureUser(true_params)
 
     params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim)}
