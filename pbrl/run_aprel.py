@@ -79,12 +79,12 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
             features: a numpy vector corresponding the features of the trajectory
         """
         # print("type(traj[0][0]):", type(traj[0][0]))
-        print("len(traj):", len(traj))
+        # print("len(traj):", len(traj))
         traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
         traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
         rand_traj = torch.rand(traj.shape)
         rand_nl = torch.rand(1, BERT_OUTPUT_DIM)
-        print("traj tensor:", traj.shape)
+        # print("traj tensor:", traj.shape)
         with torch.no_grad():
             encoded_traj, _, _, _, _ = encoder_model((traj, rand_traj, rand_nl))
             encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
@@ -123,7 +123,6 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
                 features: a numpy vector corresponding the features of the trajectory
             """
             traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
-            print("traj:", traj.shape)
             features = np.zeros(5)
             features[0] = np.mean([gt_reward(t) for t in traj])
             features[1] = np.mean([speed(t) for t in traj])
@@ -148,7 +147,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
 
     query = aprel.PreferenceQuery(trajectory_set[:2])
 
-    for query_no in range(10):
+    for query_no in range(100):
         queries, objective_values = query_optimizer.optimize('mutual_information', belief, query)
         print('Objective Value: ' + str(objective_values[0]))
 
@@ -160,6 +159,15 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_file_path):
         belief.update(aprel.Preference(queries[0], responses[0]), initial_point=initial_sampling_param)
 
         print('Estimated user parameters: ' + str(belief.mean))
+
+    log_likelihoods = []
+    for i in range(trajectory_set.size):
+        for j in range(i+1, trajectory_set.size):
+            ll = np.exp(np.dot(belief.mean['weights'], feature_func(trajectory_set[i].trajectory)))
+            ll /= np.exp(np.dot(belief.mean['weights'], feature_func(trajectory_set[i].trajectory))) + np.exp(np.dot(belief.mean['weights'], feature_func(trajectory_set[j].trajectory)))
+            ll = np.log(ll)
+            log_likelihoods.append(ll)
+    print("final mean log likelihood:", np.mean(log_likelihoods))
 
 
 if __name__ == '__main__':
