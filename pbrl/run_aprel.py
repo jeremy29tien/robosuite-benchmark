@@ -229,5 +229,5 @@ if __name__ == '__main__':
 
     gym_env = make_gym_env(seed)
 
-    run_aprel(seed, gym_env, model_path, human_user, traj_dir)
+    run_aprel(seed, gym_env, model_path, human_user, traj_dir, output_dir)
 
