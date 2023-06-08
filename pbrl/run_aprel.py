@@ -81,8 +81,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir=''):
         """
         traj = np.asarray([np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
         traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
-        rand_traj = torch.rand(traj.shape)
-        rand_nl = torch.rand(1, BERT_OUTPUT_DIM)
+        rand_traj = torch.rand(traj.shape, device=device)
+        rand_nl = torch.rand(1, BERT_OUTPUT_DIM, device=device)
         with torch.no_grad():
             encoded_traj, _, _, _, _ = encoder_model((traj, rand_traj, rand_nl))
             encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
