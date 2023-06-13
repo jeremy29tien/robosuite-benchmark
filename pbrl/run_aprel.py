@@ -179,6 +179,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
 
         print('Estimated user parameters: ' + str(belief.mean))
 
+        print("Response:", int(responses[0]))
         ll = np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
         ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
             np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
