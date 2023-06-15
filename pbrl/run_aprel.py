@@ -166,6 +166,38 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
     # Initialize a dummy query so that the query optimizer will generate queries of the same kind
     if args['query_type'] == 'preference':
         query = aprel.PreferenceQuery(trajectory_set[:args['query_size']])
+    elif args['query_type'] == 'nl_command':
+        ideal_trajectory = None
+        ideal_reward = -np.inf
+        for trajectory in trajectory_set:
+            r = true_user.reward(trajectory)
+            if r > ideal_reward:
+                ideal_reward = r
+                ideal_trajectory = trajectory
+
+        def lang_encoder_func(in_str: str) -> np.array:
+            """Returns encoded version of in_str, i.e. \Phi(in_str).
+
+            Args:
+                in_str: Command in natural language.
+
+            Returns:
+                enc_str: a numpy vector corresponding the encoded string
+            """
+            # TODO: replace below code with code that encodes the user string using the encoder_model
+            enc_str = None
+            # traj = np.asarray(
+            #     [np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
+            # traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
+            # rand_traj = torch.rand(traj.shape, device=device)
+            # rand_nl = torch.rand(1, BERT_OUTPUT_DIM, device=device)
+            # with torch.no_grad():
+            #     encoded_traj, _, _, _, _ = encoder_model((traj, rand_traj, rand_nl))
+            #     encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
+
+            return enc_str
+
+        query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], ideal_trajectory, lang_encoder_func)
     elif args['query_type'] == 'weak_comparison':
         query = aprel.WeakComparisonQuery(trajectory_set[:args['query_size']])
     elif args['query_type'] == 'full_ranking':
