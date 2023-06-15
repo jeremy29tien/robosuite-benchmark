@@ -163,15 +163,31 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
     belief = aprel.SamplingBasedBelief(user_model, [], params)
     print('Estimated user parameters: ' + str(belief.mean))
 
-    query = aprel.PreferenceQuery(trajectory_set[:2])
+    # Initialize a dummy query so that the query optimizer will generate queries of the same kind
+    if args['query_type'] == 'preference':
+        query = aprel.PreferenceQuery(trajectory_set[:args['query_size']])
+    elif args['query_type'] == 'weak_comparison':
+        query = aprel.WeakComparisonQuery(trajectory_set[:args['query_size']])
+    elif args['query_type'] == 'full_ranking':
+        query = aprel.FullRankingQuery(trajectory_set[:args['query_size']])
+    else:
+        raise NotImplementedError('Unknown query type.')
+
 
     log_likelihoods = []
     val_log_likelihoods = []
     for query_no in range(args['num_iterations']):
-        queries, objective_values = query_optimizer.optimize('mutual_information', belief, query)
-        print('Objective Value: ' + str(objective_values[0]))
+        # Optimize the query
+        queries, objective_values = query_optimizer.optimize(args['acquisition'], belief,
+                                                             query, batch_size=args['batch_size'],
+                                                             optimization_method=args['optim_method'],
+                                                             reduced_size=args['reduced_size_for_batches'],
+                                                             gamma=args['dpp_gamma'],
+                                                             distance=args['distance_metric_for_batches'])
+        print('Objective Values: ' + str(objective_values))
 
-        responses = true_user.respond(queries[0])
+        # Ask the query to the human
+        responses = true_user.respond(queries)
 
         # Erdem's fix:
         # belief.update(aprel.Preference(queries[0], responses[0]))
@@ -192,7 +208,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
             np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
             np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
 
-        # TODO: Compute log likelihood on the set of val trajectories.
+        # Compute log likelihood on the set of val trajectories.
         if val_trajectory_set is not None:
             val_lls = []
             for i in range(val_trajectory_set.size):
@@ -220,9 +236,23 @@ if __name__ == '__main__':
     parser.add_argument('--human-user', action="store_true", help='')
     parser.add_argument('--sim-user-beta', type=float, default=1.0, help='')
     parser.add_argument('--output-dir', type=str, default='', help='')
+    parser.add_argument('--query_type', type=str, default='preference',
+                        help='Type of the queries that will be actively asked to the user. Options: preference, weak_comparison, full_ranking.')
+    parser.add_argument('--query_size', type=int, default=2,
+                        help='Number of trajectories in each query.')
     parser.add_argument('--num_iterations', type=int, default=10,
                         help='Number of iterations in the active learning loop.')
-    # parser.add_argument('--val-split', type=float, default=0.1, help='')
+    parser.add_argument('--optim_method', type=str, default='exhaustive_search',
+                        help='Options: exhaustive_search, greedy, medoids, boundary_medoids, successive_elimination, dpp.')
+    parser.add_argument('--batch_size', type=int, default=1,
+                        help='Batch size can be set >1 for batch active learning algorithms.')
+    parser.add_argument('--acquisition', type=str, default='random',
+                        help='Acquisition function for active querying. Options: mutual_information, volume_removal, disagreement, regret, random, thompson')
+    parser.add_argument('--reduced_size_for_batches', type=int, default=100,
+                        help='The number of greedily chosen candidate queries (reduced set) for batch generation.')
+    parser.add_argument('--dpp_gamma', type=int, default=1,
+                        help='Gamma parameter for the DPP method: the higher gamma the more important is the acquisition function relative to diversity.')
+
 
     args = parser.parse_args()
 
@@ -232,6 +262,7 @@ if __name__ == '__main__':
     human_user = args.human_user
     output_dir = args.output_dir
     args = vars(args)
+    args['distance_metric_for_batches'] = aprel.default_query_distance # all relevant methods default to default_query_distance
 
     gym_env = make_gym_env(seed)
 
