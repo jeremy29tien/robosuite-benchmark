@@ -153,6 +153,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
         # (user reward depends on gt_reward, speed, height, distance to bottle, distance to cube)
         true_features_dim = 5
         true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
+                       'beta': args['sim_user_beta'],
                        'feature_func': true_user_feature_func}
         print("True user parameters:", true_params['weights'])
         true_user = aprel.CustomFeatureUser(true_params)
@@ -217,6 +218,7 @@ if __name__ == '__main__':
     parser.add_argument('--model-path', type=str, default='', help='')
     parser.add_argument('--traj-dir', type=str, default='', help='')
     parser.add_argument('--human-user', action="store_true", help='')
+    parser.add_argument('--sim-user-beta', type=float, default=1.0, help='')
     parser.add_argument('--output-dir', type=str, default='', help='')
     parser.add_argument('--num_iterations', type=int, default=10,
                         help='Number of iterations in the active learning loop.')
