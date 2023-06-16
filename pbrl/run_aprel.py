@@ -249,34 +249,41 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
         print('Estimated user parameters: ' + str(belief.mean))
 
         print("Response:", int(responses[0]))
-        ll = np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
-        ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
-            np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
-        ll = np.log(ll)
-        print("log likelihood:", ll)
-        log_likelihoods.append(ll)
+
+        # TODO: Question: why can't we use the already implemented `loglikelihood` function in SoftmaxUser? We're
+        #  essentially reimplementing that below.
+        if args['query_type'] == 'preference':
+            ll = np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
+            ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
+                np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
+            ll = np.log(ll)
+            print("log likelihood:", ll)
+            log_likelihoods.append(ll)
+        else:
+            print('log likelihood calculation not supported for this query type yet.')
 
         if output_dir != '':
             np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
             np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
 
-        # Compute log likelihood on the set of val trajectories.
-        if val_trajectory_set is not None:
-            val_lls = []
-            for i in range(val_trajectory_set.size):
-                for j in range(i+1, val_trajectory_set.size):
-                    val_query = aprel.PreferenceQuery([val_trajectory_set[i], val_trajectory_set[j]])
-                    val_response = true_user.respond(val_query)
+        if args['query_type'] == 'preference':
+            # Compute log likelihood on the set of val trajectories.
+            if val_trajectory_set is not None:
+                val_lls = []
+                for i in range(val_trajectory_set.size):
+                    for j in range(i+1, val_trajectory_set.size):
+                        val_query = aprel.PreferenceQuery([val_trajectory_set[i], val_trajectory_set[j]])
+                        val_response = true_user.respond(val_query)
 
-                    ll = np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response[0])].features))
-                    ll /= np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response[0])].features)) + np.exp(
-                        np.dot(belief.mean['weights'], val_query.slate[1 - int(val_response[0])].features))
-                    ll = np.log(ll)
-                    val_lls.append(ll)
-            print("validation log likelihood:", np.mean(val_lls))
-            val_log_likelihoods.append(np.mean(val_lls))
-            if output_dir != '':
-                np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
+                        ll = np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response[0])].features))
+                        ll /= np.exp(np.dot(belief.mean['weights'], val_query.slate[int(val_response[0])].features)) + np.exp(
+                            np.dot(belief.mean['weights'], val_query.slate[1 - int(val_response[0])].features))
+                        ll = np.log(ll)
+                        val_lls.append(ll)
+                print("validation log likelihood:", np.mean(val_lls))
+                val_log_likelihoods.append(np.mean(val_lls))
+                if output_dir != '':
+                    np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
 
 
 if __name__ == '__main__':
