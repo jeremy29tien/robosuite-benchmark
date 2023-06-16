@@ -15,6 +15,9 @@ from nl_traj_feature_learning.learn_features import STATE_DIM, ACTION_DIM, BERT_
 from gpu_utils import determine_default_torch_device
 import argparse
 import os
+import json
+
+from bert_preprocessing import preprocess_strings
 
 
 def make_gym_env(seed):
@@ -185,15 +188,32 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
                 enc_str: a numpy vector corresponding the encoded string
             """
             # TODO: replace below code with code that encodes the user string using the encoder_model
+            assert traj_dir != ''
+            nl_comp_file = os.path.join(traj_dir, "train/nlcomps.json")
+            with open(nl_comp_file, 'rb') as f:
+                nl_comps = json.load(f)
+
+            # IMPORTANT: Make this a unique set of nl comps
+            nl_comps = list(set(nl_comps))
+
+            # Preprocess strings using BERT
+            nl_embeddings = preprocess_strings('', 500, nl_comps)
+
             enc_str = None
-            # traj = np.asarray(
-            #     [np.concatenate((t[0], t[1]), axis=0) for t in traj if t[1] is not None and t[0] is not None])
-            # traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
-            # rand_traj = torch.rand(traj.shape, device=device)
-            # rand_nl = torch.rand(1, BERT_OUTPUT_DIM, device=device)
-            # with torch.no_grad():
-            #     encoded_traj, _, _, _, _ = encoder_model((traj, rand_traj, rand_nl))
-            #     encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
+            assert len(nl_comps) == len(nl_embeddings)
+            for i in range(len(nl_comps)):
+                if nl_comps[i] == in_str:
+                    enc_str = nl_embeddings[i]
+                    break
+            if enc_str is None:
+                raise ValueError("in_str must be a valid string, was instead:" + in_str)
+
+            # Encode BERT-preprocessed string using learned model
+            enc_str = torch.unsqueeze(torch.as_tensor(enc_str, dtype=torch.float32, device=device), 0)
+            rand_traj = torch.rand(1, 500, STATE_DIM+ACTION_DIM, device=device)
+            with torch.no_grad():
+                _, _, enc_str, _, _ = encoder_model((rand_traj, rand_traj, enc_str))
+                enc_str = enc_str.squeeze().detach().cpu().numpy()
 
             return enc_str
 
