@@ -58,7 +58,7 @@ def preprocess_strings(nlcomp_dir, batch_size, nlcomp_list=None, id_mapping=Fals
             outfile = os.path.join(nlcomp_dir, 'nlcomps.npy')
         if save:
             np.save(outfile, np.asarray(bert_output_embeddings))
-        return np.asarray(bert_output_embeddings)
+    return np.asarray(bert_output_embeddings)
 
 
 if __name__ == '__main__':
