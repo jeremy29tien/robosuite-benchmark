@@ -7,6 +7,7 @@ import os
 
 def preprocess_strings(nlcomp_dir, batch_size, nlcomp_list=None, id_mapping=False, save=False):
     if nlcomp_list is None:
+        assert nlcomp_dir != ''
         # nlcomp_file is a json file with the list of comparisons in NL.
         nlcomp_file = os.path.join(nlcomp_dir, 'nlcomps.json')
 
