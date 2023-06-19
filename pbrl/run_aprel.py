@@ -161,6 +161,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
         print("True user parameters:", true_params['weights'])
         true_user = aprel.CustomFeatureUser(true_params)
 
+    # Create the human response model and initialize the belief distribution
+    # TODO: modify the following line to include the trajectory_set as one of the params
+    #       in the case that we are using a NLCommandQuery.
     params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim)}
     user_model = aprel.SoftmaxUser(params)
     belief = aprel.SamplingBasedBelief(user_model, [], params)
@@ -187,7 +190,6 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
             Returns:
                 enc_str: a numpy vector corresponding the encoded string
             """
-            # TODO: replace below code with code that encodes the user string using the encoder_model
             assert traj_dir != ''
             nl_comp_file = os.path.join(traj_dir, "train/nlcomps.json")
             with open(nl_comp_file, 'rb') as f:
@@ -244,6 +246,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
         # Erdem's fix:
         # belief.update(aprel.Preference(queries[0], responses[0]))
         initial_sampling_param = {"weights": [0 for _ in range(features_dim)]}
+
+        # TODO: correct this; why is it Preference-specific?
         belief.update(aprel.Preference(queries[0], responses[0]), initial_point=initial_sampling_param)
 
         print('Estimated user parameters: ' + str(belief.mean))
