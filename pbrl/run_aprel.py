@@ -168,10 +168,13 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
     if args['query_type'] == 'nl_command':
         params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim),
                   'trajectory_set': trajectory_set}
+        user_model = aprel.SoftmaxUser(params)
+        params.pop('trajectory_set')
+        belief = aprel.SamplingBasedBelief(user_model, [], params)
     else:
         params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim)}
-    user_model = aprel.SoftmaxUser(params)
-    belief = aprel.SamplingBasedBelief(user_model, [], params)
+        user_model = aprel.SoftmaxUser(params)
+        belief = aprel.SamplingBasedBelief(user_model, [], params)
     print('Estimated user parameters: ' + str(belief.mean))
 
     # Initialize a dummy query so that the query optimizer will generate queries of the same kind
@@ -189,15 +192,16 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
                 enc_str: a numpy vector corresponding the encoded string
             """
             assert traj_dir != ''
-            nl_comp_file = os.path.join(traj_dir, "train/nlcomps.json")
+            nl_comp_file = os.path.join(traj_dir, "train/unique_nlcomps_for_aprel.json")
             with open(nl_comp_file, 'rb') as f:
                 nl_comps = json.load(f)
 
-            # IMPORTANT: Make this a unique set of nl comps
-            nl_comps = list(set(nl_comps))
-
-            # Preprocess strings using BERT
-            nl_embeddings = preprocess_strings('', 500, nl_comps)
+            try:
+                nl_embedding_file = os.path.join(traj_dir, "train/unique_nlcomps_for_aprel.npy")
+                nl_embeddings = np.load(nl_embedding_file)
+            except FileNotFoundError:
+                # Preprocess strings using BERT
+                nl_embeddings = preprocess_strings('', 500, nl_comps)
 
             enc_str = None
             assert len(nl_comps) == len(nl_embeddings)
@@ -252,7 +256,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
 
         print('Estimated user parameters: ' + str(belief.mean))
 
-        print("Response:", int(responses[0]))
+        print("Response:", responses[0])
 
         # TODO: Question: why can't we use the already implemented `loglikelihood` function in SoftmaxUser? We're
         #  essentially reimplementing that below.
