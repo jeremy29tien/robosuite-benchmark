@@ -164,7 +164,12 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
     # Create the human response model and initialize the belief distribution
     # TODO: modify the following line to include the trajectory_set as one of the params
     #       in the case that we are using a NLCommandQuery.
-    params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim)}
+
+    if args['query_type'] == 'nl_command':
+        params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim),
+                  'trajectory_set': trajectory_set}
+    else:
+        params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim)}
     user_model = aprel.SoftmaxUser(params)
     belief = aprel.SamplingBasedBelief(user_model, [], params)
     print('Estimated user parameters: ' + str(belief.mean))
@@ -173,13 +178,6 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
     if args['query_type'] == 'preference':
         query = aprel.PreferenceQuery(trajectory_set[:args['query_size']])
     elif args['query_type'] == 'nl_command':
-        ideal_trajectory = None
-        ideal_reward = -np.inf
-        for trajectory in trajectory_set:
-            r = true_user.reward(trajectory)
-            if r > ideal_reward:
-                ideal_reward = r
-                ideal_trajectory = trajectory
 
         def lang_encoder_func(in_str: str) -> np.array:
             """Returns encoded version of in_str, i.e. \Phi(in_str).
@@ -219,7 +217,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
 
             return enc_str
 
-        query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], ideal_trajectory, lang_encoder_func)
+        query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], lang_encoder_func)
     elif args['query_type'] == 'weak_comparison':
         query = aprel.WeakComparisonQuery(trajectory_set[:args['query_size']])
     elif args['query_type'] == 'full_ranking':
@@ -243,12 +241,14 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
         # Ask the query to the human
         responses = true_user.respond(queries)
 
-        # Erdem's fix:
-        # belief.update(aprel.Preference(queries[0], responses[0]))
+        # Update belief
         initial_sampling_param = {"weights": [0 for _ in range(features_dim)]}
-
-        # TODO: correct this; why is it Preference-specific?
-        belief.update(aprel.Preference(queries[0], responses[0]), initial_point=initial_sampling_param)
+        if args['query_type'] == 'preference':
+            belief.update(aprel.Preference(queries[0], responses[0]), initial_point=initial_sampling_param)
+        elif args['query_type'] == 'nl_command':
+            belief.update(aprel.NLCommand(queries[0], responses[0]), initial_point=initial_sampling_param)
+        else:
+            raise NotImplementedError('Unknown query type.')
 
         print('Estimated user parameters: ' + str(belief.mean))
 
