@@ -92,9 +92,9 @@ if __name__ == "__main__":
         env_suite = suite.make(**env_args,
                                controller_configs=controller_config,
                                has_renderer=False,
-                               has_offscreen_renderer=False,
+                               has_offscreen_renderer=args.use_camera_obs,
                                use_object_obs=True,
-                               use_camera_obs=False,
+                               use_camera_obs=args.use_camera_obs,
                                reward_shaping=True
                                )
     else:

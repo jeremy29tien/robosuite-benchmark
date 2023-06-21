@@ -231,6 +231,10 @@ def add_rollout_args():
         action='store_true',
         help='If true, uses GPU to process model')
     parser.add_argument(
+        '--use_camera_obs',
+        action='store_true',
+        help='If true, includes camera observation.')
+    parser.add_argument(
         '--camera',
         type=str,
         default='frontview',
