@@ -416,6 +416,7 @@ def rollout(
     agent_infos = []
     env_infos = []
     o = env.reset()
+    print("o:", len(o))
     agent.reset()
     next_o = None
     path_length = 0

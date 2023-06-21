@@ -89,6 +89,7 @@ if __name__ == "__main__":
 
     # Create env
     if args.output_dir is not None:
+        print("args.use_camera_obs:", args.use_camera_obs)
         env_suite = suite.make(**env_args,
                                controller_configs=controller_config,
                                has_renderer=False,
