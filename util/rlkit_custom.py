@@ -416,7 +416,6 @@ def rollout(
     agent_infos = []
     env_infos = []
     o = env.reset()
-    print("o:", len(o))
     agent.reset()
     next_o = None
     path_length = 0
@@ -453,7 +452,6 @@ def rollout(
             # Write to video writer
             video_writer.append_data(img[::-1])
         elif env.use_camera_obs:
-            print("env.use_camera_obs:", env.use_camera_obs)
             full_obs = env._get_observations()
             img = full_obs[env.camera_names[0] + "_image"]
             frames.append(img)
