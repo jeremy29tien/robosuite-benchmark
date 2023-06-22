@@ -78,7 +78,7 @@ if __name__ == "__main__":
     if args.record_video_per_rollout:
         assert args.video_output_dir is not None
 
-        filenames = [int(f) for f in os.listdir(args.video_output_dir) if os.isfile(os.join(args.video_output_dir, f))]
+        filenames = [int(f) for f in os.listdir(args.video_output_dir) if os.path.isfile(os.path.join(args.video_output_dir, f))]
         if len(filenames) == 0:
             starting_name = 0
         else:
