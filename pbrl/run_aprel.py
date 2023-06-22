@@ -247,6 +247,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     if not human_user:
         num_correct = 0
         num_incorrect = 0
+        val_accuracies = []
     for query_no in range(args['num_iterations']):
         # Optimize the query
         queries, objective_values = query_optimizer.optimize(args['acquisition'], belief,
@@ -302,6 +303,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             # Compute log likelihood on the set of val trajectories.
             if val_trajectory_set is not None:
                 val_lls = []
+                val_num_correct = 0
+                val_num_incorrect = 0
                 for i in range(val_trajectory_set.size):
                     for j in range(i+1, val_trajectory_set.size):
                         val_query = aprel.PreferenceQuery([val_trajectory_set[i], val_trajectory_set[j]])
@@ -312,10 +315,22 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                             np.dot(belief.mean['weights'], val_query.slate[1 - int(val_response[0])].features))
                         ll = np.log(ll)
                         val_lls.append(ll)
+
+                        if val_response[0] != np.argmax(true_user.reward(val_query.slate)):
+                            val_num_incorrect += 1
+                        else:
+                            val_num_correct += 1
                 print("validation log likelihood:", np.mean(val_lls))
                 val_log_likelihoods.append(np.mean(val_lls))
+                val_accuracy = val_num_correct / (val_num_correct + val_num_incorrect)
+                val_accuracies.append(val_accuracy)
                 if output_dir != '':
                     np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
+                    np.save(os.path.join(output_dir, 'simuser_val_accuracies.npy'), val_accuracies)
+
+    if not human_user:
+        train_accuracy = num_correct / (num_correct + num_incorrect)
+        print("Accuracy of simulated user during active learning:", train_accuracy)
 
 
 if __name__ == '__main__':
