@@ -70,7 +70,7 @@ def load_model(model_path):
     return model, device
 
 
-def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='', args=None):
+def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', output_dir='', args=None):
     encoder_model, device = load_model(model_path)
 
     def feature_func(traj):
@@ -107,19 +107,33 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
         # Take trajectories from our training/val data.
         train_trajs = np.load(os.path.join(traj_dir, 'train/trajs.npy'))
         val_trajs = np.load(os.path.join(traj_dir, 'val/trajs.npy'))
+        videos_available = True
+        try:
+            train_traj_video_ids = np.load(os.path.join(traj_dir, 'train/traj_video_ids.npy'))
+            val_traj_video_ids = np.load(os.path.join(traj_dir, 'val/traj_video_ids.npy'))
+        except FileNotFoundError:
+            print("No trajectory videos found, proceeding without them.")
+            videos_available = False
 
         train_traj_set = []
-        for train_traj in train_trajs:
-            traj = aprel.Trajectory(env, [(t[0:STATE_DIM], t[STATE_DIM:STATE_DIM+ACTION_DIM]) for t in train_traj])
-            # TODO: once they're available, load trajectories with camera observation
+        for i, train_traj in enumerate(train_trajs):
+            # If available, load trajectories with camera observation.
+            clip_path = None
+            if videos_available:
+                clip_path = os.path.join(video_dir, train_traj_video_ids[i], ".mp4")
+
+            traj = aprel.Trajectory(env, [(t[0:STATE_DIM], t[STATE_DIM:STATE_DIM+ACTION_DIM]) for t in train_traj], clip_path=clip_path)
             train_traj_set.append(traj)
 
         val_traj_set = []
-        for val_traj in val_trajs:
-            traj = aprel.Trajectory(env, [(t[0:STATE_DIM], t[STATE_DIM:STATE_DIM+ACTION_DIM]) for t in val_traj])
-            # TODO: once they're available, load trajectories with camera observation
-            val_traj_set.append(traj)
+        for i, val_traj in enumerate(val_trajs):
+            # If available, load trajectories with camera observation.
+            clip_path = None
+            if videos_available:
+                clip_path = os.path.join(video_dir, val_traj_video_ids[i], ".mp4")
 
+            traj = aprel.Trajectory(env, [(t[0:STATE_DIM], t[STATE_DIM:STATE_DIM+ACTION_DIM]) for t in val_traj], clip_path=clip_path)
+            val_traj_set.append(traj)
 
         trajectory_set = aprel.TrajectorySet(train_traj_set)
         val_trajectory_set = aprel.TrajectorySet(val_traj_set)
@@ -162,10 +176,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
         true_user = aprel.CustomFeatureUser(true_params)
 
     # Create the human response model and initialize the belief distribution
-    # TODO: modify the following line to include the trajectory_set as one of the params
-    #       in the case that we are using a NLCommandQuery.
-
     if args['query_type'] == 'nl_command':
+        # NLCommandQuery requires the trajectory_set as one of the params
         params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim),
                   'trajectory_set': trajectory_set}
         user_model = aprel.SoftmaxUser(params)
@@ -232,6 +244,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
 
     log_likelihoods = []
     val_log_likelihoods = []
+    if not human_user:
+        num_correct = 0
+        num_incorrect = 0
     for query_no in range(args['num_iterations']):
         # Optimize the query
         queries, objective_values = query_optimizer.optimize(args['acquisition'], belief,
@@ -257,6 +272,15 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', output_dir='',
         print('Estimated user parameters: ' + str(belief.mean))
 
         print("Response:", responses[0])
+        if not human_user:
+            true_user_rewards = true_user.reward(queries[0].slate)
+            correct_true_user_response = np.argmax(true_user_rewards)
+            print("Correct response (based on true reward):", correct_true_user_response)
+            if responses[0] != correct_true_user_response:
+                print("Simulated human answered incorrectly!")
+                num_incorrect += 1
+            else:
+                num_correct += 1
 
         # TODO: Question: why can't we use the already implemented `loglikelihood` function in SoftmaxUser? We're
         #  essentially reimplementing that below.
@@ -300,6 +324,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0, help='')
     parser.add_argument('--model-path', type=str, default='', help='')
     parser.add_argument('--traj-dir', type=str, default='', help='')
+    parser.add_argument('--video-dir', type=str, default='', help='')
     parser.add_argument('--human-user', action="store_true", help='')
     parser.add_argument('--sim-user-beta', type=float, default=1.0, help='')
     parser.add_argument('--output-dir', type=str, default='', help='')
@@ -326,6 +351,7 @@ if __name__ == '__main__':
     seed = args.seed
     model_path = args.model_path
     traj_dir = args.traj_dir
+    video_dir = args.video_dir
     human_user = args.human_user
     output_dir = args.output_dir
     args = vars(args)
@@ -333,5 +359,5 @@ if __name__ == '__main__':
 
     gym_env = make_gym_env(seed)
 
-    run_aprel(seed, gym_env, model_path, human_user, traj_dir, output_dir, args)
+    run_aprel(seed, gym_env, model_path, human_user, traj_dir, video_dir, output_dir, args)
 
