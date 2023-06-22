@@ -425,6 +425,11 @@ def rollout(
     if render and video_writer is None:
         env.render(**render_kwargs)
 
+    if env.use_camera_obs and video_writer is None:
+        full_obs = env._get_observations()
+        img = full_obs[env.camera_names[0] + "_image"]
+        frames = [img]
+
     while path_length < max_path_length:
         # TEMP FIX FOR POLICIES TRAINED WITH OBSERVATION_DIM = 64 (WITHOUT GRASPING FEATURE)
         # WHEN WE WANT OBSERVATION_DIM=65.
@@ -447,6 +452,11 @@ def rollout(
 
             # Write to video writer
             video_writer.append_data(img[::-1])
+        elif env.use_camera_obs:
+            print("env.use_camera_obs:", env.use_camera_obs)
+            full_obs = env._get_observations()
+            img = full_obs[env.camera_names[0] + "_image"]
+            frames.append(img)
 
         agent_infos.append(agent_info)
         env_infos.append(env_info)
@@ -464,12 +474,18 @@ def rollout(
     if len(observations.shape) == 1:
         observations = np.expand_dims(observations, 1)
         next_o = np.array([next_o])
+    frames = np.array(frames)
+    if len(frames.shape) == 1:
+        frames = np.expand_dims(frames, 1)
+    observations = np.concatenate((observations, frames[:-1]), axis=-1)
+    next_o = np.concatenate((next_o, frames[-1:]), axis=-1)
     next_observations = np.vstack(
         (
             observations[1:, :],
             np.expand_dims(next_o, 0)
         )
     )
+    assert actions.shape[0] == observations.shape[0]
     return dict(
         observations=observations,
         actions=actions,
