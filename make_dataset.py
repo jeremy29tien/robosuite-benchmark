@@ -118,6 +118,8 @@ if __name__ == '__main__':
     parser.add_argument('--trajs-per-expert-policy', type=int, default=5, help='')
     parser.add_argument('--val-split', type=float, default=0.1, help='')
     parser.add_argument('--seed', type=int, default=0, help='')
+    parser.add_argument('--with-videos', action="store_true", help='')
+
 
     args = parser.parse_args()
 
@@ -131,6 +133,7 @@ if __name__ == '__main__':
     trajs_per_expert_policy = args.trajs_per_expert_policy
     val_split = args.val_split
     seed = args.seed
+    with_videos = args.with_videos
 
     np.random.seed(seed)
 
@@ -140,7 +143,10 @@ if __name__ == '__main__':
     trajectory_video_ids = []
     has_video_ids = True
     for config in os.listdir(policy_dir):
-        policy_path = os.path.join(policy_dir, config)
+        if with_videos:
+            policy_path = os.path.join(policy_dir, config, "with_camera_obs")
+        else:
+            policy_path = os.path.join(policy_dir, config)
         # TODO: check whether this still works with the with_camera_obs directory
         if os.path.isdir(policy_path) and os.listdir(
                 policy_path):  # Check that policy_path is a directory and that directory is not empty
