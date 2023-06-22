@@ -141,6 +141,7 @@ if __name__ == '__main__':
     has_video_ids = True
     for config in os.listdir(policy_dir):
         policy_path = os.path.join(policy_dir, config)
+        # TODO: check whether this still works with the with_camera_obs directory
         if os.path.isdir(policy_path) and os.listdir(
                 policy_path):  # Check that policy_path is a directory and that directory is not empty
             print(policy_path)
