@@ -6,7 +6,7 @@ import argparse
 import os
 import torch.nn as nn
 import torch.nn.functional as F
-from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
+from nl_traj_feature_learning.learn_features import NLTrajAutoencoder, STATE_DIM, ACTION_DIM, BERT_OUTPUT_DIM
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 from gpu_utils import determine_default_torch_device
 import robosuite.synthetic_comparisons
@@ -26,17 +26,57 @@ def load_model(model_path):
 
 def print_embedding_statistics(model, device, data_dir, val=False):
     # Some file-handling logic first.
-    train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.npy")
-    val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.npy")
-    train_traj_a_file = os.path.join(data_dir, "train/traj_as.npy")
-    train_traj_b_file = os.path.join(data_dir, "train/traj_bs.npy")
-    val_traj_a_file = os.path.join(data_dir, "val/traj_as.npy")
-    val_traj_b_file = os.path.join(data_dir, "val/traj_bs.npy")
+    try:
+        train_nlcomp_file = os.path.join(data_dir, "train/nlcomps.npy")
+        val_nlcomp_file = os.path.join(data_dir, "val/nlcomps.npy")
+        train_traj_a_file = os.path.join(data_dir, "train/traj_as.npy")
+        train_traj_b_file = os.path.join(data_dir, "train/traj_bs.npy")
+        val_traj_a_file = os.path.join(data_dir, "val/traj_as.npy")
+        val_traj_b_file = os.path.join(data_dir, "val/traj_bs.npy")
 
-    train_dataset = NLTrajComparisonDataset(train_nlcomp_file, train_traj_a_file, train_traj_b_file,
-                                            preprocessed_nlcomps=True)
-    val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
-                                          preprocessed_nlcomps=True)
+        train_dataset = NLTrajComparisonDataset(train_nlcomp_file, train_traj_a_file, train_traj_b_file,
+                                                preprocessed_nlcomps=True)
+        val_dataset = NLTrajComparisonDataset(val_nlcomp_file, val_traj_a_file, val_traj_b_file,
+                                              preprocessed_nlcomps=True)
+    except FileNotFoundError:
+        train_nlcomp_index_file = os.path.join(data_dir, "train/nlcomp_indexes.npy")
+        train_unique_nlcomp_file = os.path.join(data_dir, "train/unique_nlcomps.npy")
+        val_nlcomp_index_file = os.path.join(data_dir, "val/nlcomp_indexes.npy")
+        val_unique_nlcomp_file = os.path.join(data_dir, "val/unique_nlcomps.npy")
+
+        train_traj_a_index_file = os.path.join(data_dir, "train/traj_a_indexes.npy")
+        train_traj_b_index_file = os.path.join(data_dir, "train/traj_b_indexes.npy")
+        train_traj_file = os.path.join(data_dir, "train/trajs.npy")
+        val_traj_a_index_file = os.path.join(data_dir, "val/traj_a_indexes.npy")
+        val_traj_b_index_file = os.path.join(data_dir, "val/traj_b_indexes.npy")
+        val_traj_file = os.path.join(data_dir, "val/trajs.npy")
+
+        train_dataset = NLTrajComparisonDataset(train_nlcomp_index_file, train_traj_a_index_file, train_traj_b_index_file,
+                                                preprocessed_nlcomps=True, id_mapped=True,
+                                                unique_nlcomp_file=train_unique_nlcomp_file, traj_file=train_traj_file)
+        val_dataset = NLTrajComparisonDataset(val_nlcomp_index_file, val_traj_a_index_file, val_traj_b_index_file,
+                                              preprocessed_nlcomps=True, id_mapped=True,
+                                              unique_nlcomp_file=val_unique_nlcomp_file, traj_file=val_traj_file)
+
+    # Statistics that have to do with the trajectories
+    all_trajectories = np.concatenate((train_dataset.trajs, val_dataset.trajs), axis=0)
+    all_encoded_trajectories = []
+    for traj in all_trajectories:
+        traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
+        rand_traj = torch.rand(traj.shape, device=device)
+        rand_nl = torch.rand(1, BERT_OUTPUT_DIM, device=device)
+        with torch.no_grad():
+            encoded_traj, _, _, _, _ = model((traj, rand_traj, rand_nl))
+            encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
+
+        all_encoded_trajectories.append(encoded_traj)
+
+    all_encoded_trajectories_mean = np.mean(all_encoded_trajectories, axis=0)
+    all_encoded_trajectories_std = np.std(all_encoded_trajectories, axis=0)
+    print("all_encoded_trajectories_mean:", all_encoded_trajectories_mean)
+    print("all_encoded_trajectories_std:", all_encoded_trajectories_std)
+
+    # Statistics that have to do with the actual dataset
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=256, shuffle=True, num_workers=4, pin_memory=True
     )
@@ -436,6 +476,9 @@ if __name__ == '__main__':
     parser.add_argument('--reference-policy-dir', type=str, default='', help='')
     parser.add_argument('--command-string', type=str, default='', help='')
 
+    # Arguments needed for --print-statistics
+    parser.add_argument('--print-statistics', action="store_true", help='')
+
     args = parser.parse_args()
 
     np.random.seed(args.seed)
@@ -480,8 +523,10 @@ if __name__ == '__main__':
             raise ValueError("--command-string must be a valid string.")
 
         find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp, nl_embedding, similarity_metric)
+    elif args.print_statistics:
+        print_embedding_statistics(model, device, data_dir, val)
     else:
-        print("Need to specify either --analyze or --visualize.")
+        print("Need to specify either --analyze or --visualize or --print-statistics.")
 
 
 
