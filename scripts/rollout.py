@@ -85,9 +85,9 @@ if __name__ == "__main__":
             starting_name = max(filenames) + 1
 
         video_writers = []
-        for i in range(args.num_episodes):
+        for name in range(starting_name, starting_name + args.num_episodes):
             # Grab name of this rollout combo
-            video_name = str(starting_name)
+            video_name = str(name)
             # Calculate appropriate fps
             fps = int(env_args["control_freq"])
             # Define video writer
