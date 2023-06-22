@@ -230,10 +230,10 @@ def add_rollout_args():
         '--gpu',
         action='store_true',
         help='If true, uses GPU to process model')
-    parser.add_argument(
-        '--use_camera_obs',
-        action='store_true',
-        help='If true, includes camera observation.')
+    # parser.add_argument(
+    #     '--use_camera_obs',
+    #     action='store_true',
+    #     help='If true, includes camera observation.')
     parser.add_argument(
         '--camera',
         type=str,
@@ -243,6 +243,11 @@ def add_rollout_args():
         '--record_video',
         action='store_true',
         help='If set, will save video of rollouts')
+    parser.add_argument(
+        '--record_video_per_rollout',
+        action='store_true',
+        help='If true, will save videos, one per rollout.')
+
 
 
 def get_expl_env_kwargs(args):

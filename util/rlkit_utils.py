@@ -262,13 +262,22 @@ def simulate_policy(
     while ep < num_episodes:
         if printout:
             print("Rollout episode {}".format(ep))
-        path = rollout(
-            env,
-            policy,
-            max_path_length=horizon,
-            render=render,
-            video_writer=video_writer,
-        )
+        if type(video_writer) == list:
+            path = rollout(
+                env,
+                policy,
+                max_path_length=horizon,
+                render=render,
+                video_writer=video_writer[ep],
+            )
+        else:
+            path = rollout(
+                env,
+                policy,
+                max_path_length=horizon,
+                render=render,
+                video_writer=video_writer,
+            )
         if printout:
             print("Episode rewards:", np.sum(path['rewards'].flatten()))
             print("Average speed:", np.mean(np.linalg.norm(path['observations'][:, 21:24], 2)))

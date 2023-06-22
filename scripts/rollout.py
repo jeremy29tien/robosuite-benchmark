@@ -21,12 +21,16 @@ args = parser.parse_args()
 
 # Define callbacks
 video_writer = None
+video_writers = None
 
 
 def handler(signal_received, frame):
     # Handle any cleanup here
     print('SIGINT or CTRL-C detected. Closing video writer and exiting gracefully')
     video_writer.close()
+    if len(video_writers) > 0:
+        for vw in video_writers:
+            vw.close()
     exit(0)
 
 
@@ -65,20 +69,39 @@ if __name__ == "__main__":
     env_args["ignore_done"] = True
 
     # Specify camera name if we're recording a video
-    if args.record_video:
+    if args.record_video or args.record_video_per_rollout:
         env_args["camera_names"] = args.camera
         env_args["camera_heights"] = 512
         env_args["camera_widths"] = 512
 
     # Setup video recorder if necesssary
     if args.record_video:
-        # Grab name of this rollout combo
-        video_name = "{}-{}-{}-SEED{}".format(
-            env_args["env_name"], "".join(env_args["robots"]), env_args["controller"], args.seed).replace("_", "-")
-        # Calculate appropriate fps
-        fps = int(env_args["control_freq"])
-        # Define video writer
-        video_writer = imageio.get_writer("{}.mp4".format(video_name), fps=fps)
+        if args.record_video_per_rollout:
+            assert args.output_dir is not None
+
+            filenames = [int(f) for f in os.listdir(args.output_dir) if os.isfile(os.join(args.output_dir, f))]
+            if len(filenames) == 0:
+                starting_name = 0
+            else:
+                starting_name = max(filenames) + 1
+
+            video_writers = []
+            for i in range(args.num_episodes):
+                # Grab name of this rollout combo
+                video_name = str(starting_name)
+                # Calculate appropriate fps
+                fps = int(env_args["control_freq"])
+                # Define video writer
+                vw = imageio.get_writer("{}.mp4".format(video_name), fps=fps)
+                video_writers.append(vw)
+        else:
+            # Grab name of this rollout combo
+            video_name = "{}-{}-{}-SEED{}".format(
+                env_args["env_name"], "".join(env_args["robots"]), env_args["controller"], args.seed).replace("_", "-")
+            # Calculate appropriate fps
+            fps = int(env_args["control_freq"])
+            # Define video writer
+            video_writer = imageio.get_writer("{}.mp4".format(video_name), fps=fps)
 
     # Pop the controller
     controller = env_args.pop("controller")
@@ -89,13 +112,12 @@ if __name__ == "__main__":
 
     # Create env
     if args.output_dir is not None:
-        print("args.use_camera_obs:", args.use_camera_obs)
         env_suite = suite.make(**env_args,
                                controller_configs=controller_config,
                                has_renderer=False,
-                               has_offscreen_renderer=args.use_camera_obs,
+                               has_offscreen_renderer=args.record_video_per_rollout,
                                use_object_obs=True,
-                               use_camera_obs=args.use_camera_obs,
+                               use_camera_obs=args.record_video_per_rollout,
                                reward_shaping=True
                                )
     else:
@@ -117,7 +139,21 @@ if __name__ == "__main__":
     env = GymWrapper(env_suite, keys=keys)
 
     # Run rollout
-    if args.output_dir is not None:
+    if args.record_video_per_rollout and args.output_dir is not None:
+        simulate_policy(
+            env=env,
+            model_path=model_fpath,
+            horizon=env_args["horizon"],
+            render=False,
+            video_writer=video_writers,
+            num_episodes=args.num_episodes,
+            printout=True,
+            use_gpu=args.gpu,
+            output_dir=args.output_dir
+        )
+        traj_video_ids = np.arange(starting_name, starting_name + args.num_episodes)
+        np.save(args.output_dir + '/traj_video_ids.npy', traj_video_ids)
+    elif args.output_dir is not None:
         simulate_policy(
             env=env,
             model_path=model_fpath,
