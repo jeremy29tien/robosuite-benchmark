@@ -75,33 +75,32 @@ if __name__ == "__main__":
         env_args["camera_widths"] = 512
 
     # Setup video recorder if necesssary
-    if args.record_video:
-        if args.record_video_per_rollout:
-            assert args.output_dir is not None
+    if args.record_video_per_rollout:
+        assert args.video_output_dir is not None
 
-            filenames = [int(f) for f in os.listdir(args.output_dir) if os.isfile(os.join(args.output_dir, f))]
-            if len(filenames) == 0:
-                starting_name = 0
-            else:
-                starting_name = max(filenames) + 1
-
-            video_writers = []
-            for i in range(args.num_episodes):
-                # Grab name of this rollout combo
-                video_name = str(starting_name)
-                # Calculate appropriate fps
-                fps = int(env_args["control_freq"])
-                # Define video writer
-                vw = imageio.get_writer("{}.mp4".format(video_name), fps=fps)
-                video_writers.append(vw)
+        filenames = [int(f) for f in os.listdir(args.video_output_dir) if os.isfile(os.join(args.video_output_dir, f))]
+        if len(filenames) == 0:
+            starting_name = 0
         else:
+            starting_name = max(filenames) + 1
+
+        video_writers = []
+        for i in range(args.num_episodes):
             # Grab name of this rollout combo
-            video_name = "{}-{}-{}-SEED{}".format(
-                env_args["env_name"], "".join(env_args["robots"]), env_args["controller"], args.seed).replace("_", "-")
+            video_name = str(starting_name)
             # Calculate appropriate fps
             fps = int(env_args["control_freq"])
             # Define video writer
-            video_writer = imageio.get_writer("{}.mp4".format(video_name), fps=fps)
+            vw = imageio.get_writer("{}/{}.mp4".format(args.video_output_dir, video_name), fps=fps)
+            video_writers.append(vw)
+    elif args.record_video:
+        # Grab name of this rollout combo
+        video_name = "{}-{}-{}-SEED{}".format(
+            env_args["env_name"], "".join(env_args["robots"]), env_args["controller"], args.seed).replace("_", "-")
+        # Calculate appropriate fps
+        fps = int(env_args["control_freq"])
+        # Define video writer
+        video_writer = imageio.get_writer("{}.mp4".format(video_name), fps=fps)
 
     # Pop the controller
     controller = env_args.pop("controller")

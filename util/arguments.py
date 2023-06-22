@@ -217,6 +217,11 @@ def add_rollout_args():
         required=False,
         help='path to the output directory folder')
     parser.add_argument(
+        '--video_output_dir',
+        type=str,
+        required=False,
+        help='path to the output directory folder for videos')
+    parser.add_argument(
         '--num_episodes',
         type=int,
         default=10,
