@@ -137,6 +137,8 @@ if __name__ == '__main__':
     print("GETTING TRAJECTORY ROLLOUTS...")
     trajectories = []
     # trajectory_rewards = []
+    trajectory_video_ids = []
+    has_video_ids = True
     for config in os.listdir(policy_dir):
         policy_path = os.path.join(policy_dir, config)
         if os.path.isdir(policy_path) and os.listdir(
@@ -144,6 +146,10 @@ if __name__ == '__main__':
             print(policy_path)
             observations = np.load(os.path.join(policy_path, "traj_observations.npy"))
             actions = np.load(os.path.join(policy_path, "traj_actions.npy"))
+            try:
+                video_ids = np.load(os.path.join(policy_path, "traj_video_ids.npy"))
+            except FileNotFoundError:
+                has_video_ids = False
 
             # WARNING: rewards here is the reward given by the custom weights (0, 1, 2) that we used to train the
             # diverse policies, NOT the true ground truth Lift environment reward.
@@ -155,15 +161,21 @@ if __name__ == '__main__':
             # Downsample
             if config == 'expert':
                 trajs = trajs[0:trajs_per_expert_policy]
+                if has_video_ids:
+                    video_ids = video_ids[0:trajs_per_expert_policy]
                 # rewards = rewards[0:trajs_per_expert_policy]
             else:
                 trajs = trajs[0:trajs_per_policy]
+                if has_video_ids:
+                    video_ids = video_ids[0:trajs_per_policy]
                 # rewards = rewards[0:trajs_per_policy]
 
             # NOTE: We use extend rather than append because we don't want to add an
             # additional dimension across the policies.
             trajectories.extend(trajs)
             # trajectory_rewards.extend(rewards)
+            if has_video_ids:
+                trajectory_video_ids.extend(video_ids)
 
     trajectories = np.asarray(trajectories)
     # trajectory_rewards = np.asarray(trajectory_rewards)
@@ -180,6 +192,12 @@ if __name__ == '__main__':
     # val_trajectory_rewards = trajectory_rewards[0:split_i]
     train_trajectories = trajectories[split_i:]
     # train_trajectory_rewards = trajectory_rewards[split_i:]
+
+    if has_video_ids:
+        trajectory_video_ids = np.asarray(trajectory_video_ids)
+        trajectory_video_ids = trajectory_video_ids[p]
+        val_trajectory_video_ids = trajectory_video_ids[0:split_i]
+        train_trajectory_video_ids = trajectory_video_ids[split_i:]
 
     print("NUM_TRAJECTORIES:", num_trajectories)
     print("NUM TRAIN TRAJECTORIES:", len(train_trajectories))
@@ -205,6 +223,9 @@ if __name__ == '__main__':
         np.save(os.path.join(output_dir, 'val/trajs.npy'), val_trajectories)
         with open(os.path.join(output_dir, 'val/nlcomps.json'), 'w') as f:
             json.dump(val_comps, f)
+        if has_video_ids:
+            np.save(os.path.join(output_dir, 'train/traj_video_ids.npy'), train_trajectory_video_ids)
+            np.save(os.path.join(output_dir, 'val/traj_video_ids.npy'), val_trajectory_video_ids)
     else:
         np.save(os.path.join(output_dir, 'train/traj_as.npy'), train_traj_as)
         np.save(os.path.join(output_dir, 'train/traj_bs.npy'), train_traj_bs)
