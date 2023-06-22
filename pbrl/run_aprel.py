@@ -120,7 +120,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             # If available, load trajectories with camera observation.
             clip_path = None
             if videos_available:
-                clip_path = os.path.join(video_dir, train_traj_video_ids[i], ".mp4")
+                clip_path = os.path.join(video_dir, str(train_traj_video_ids[i]) + ".mp4")
 
             traj = aprel.Trajectory(env, [(t[0:STATE_DIM], t[STATE_DIM:STATE_DIM+ACTION_DIM]) for t in train_traj], clip_path=clip_path)
             train_traj_set.append(traj)
@@ -130,7 +130,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             # If available, load trajectories with camera observation.
             clip_path = None
             if videos_available:
-                clip_path = os.path.join(video_dir, val_traj_video_ids[i], ".mp4")
+                clip_path = os.path.join(video_dir, str(val_traj_video_ids[i]) + ".mp4")
 
             traj = aprel.Trajectory(env, [(t[0:STATE_DIM], t[STATE_DIM:STATE_DIM+ACTION_DIM]) for t in val_traj], clip_path=clip_path)
             val_traj_set.append(traj)
