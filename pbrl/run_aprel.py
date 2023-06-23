@@ -94,9 +94,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             encoded_traj, _, _, _, _ = encoder_model((traj, rand_traj, rand_nl))
             encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
 
-        # TODO: Could add a line that normalizes each feature in the embedding.
-        #  Not sure whether there's a nice clean way of computing the mean and
-        #  standard deviation of each feature though.
+        # Normalize embedding; check that the normalization corresponds to the dataset/model.
+        if "128hidden_expertx50_noise-augmentation10_0.001weightdecay" in model_path and "56x3_expertx50_all-pairs_noise-augmentation10_id-mapping" in traj_dir:
+            encoded_traj = (encoded_traj - all_encoded_trajectories_mean) / all_encoded_trajectories_std
         return encoded_traj
 
     env = aprel.Environment(gym_env, feature_func)
