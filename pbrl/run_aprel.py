@@ -19,9 +19,73 @@ import json
 
 from bert_preprocessing import preprocess_strings
 
+# if args['normalize_feature_funcs'] and "128hidden_expertx50_noise-augmentation10_0.001weightdecay" in model_path and "56x3_expertx50_all-pairs_noise-augmentation10_id-mapping" in traj_dir:
+# all_encoded_trajectories_mean = [-0.22682665, -1.2686706, 1.5685039, -1.2785618, 3.4092467, 0.0070117, 0.05656387, -0.01284434, -0.6828233 , -0.27281293, -0.56345856, 0.00778119, -0.12456893, 0.06893575, 0.00524702, 0.2000821]
+# all_encoded_trajectories_std = [0.42180222, 1.0952618, 1.9824623, 1.7400833, 0.21317093, 0.01458023, 0.48504975, 0.0102681, 1.1641839, 1.3725176, 0.18389156, 0.01337132, 0.7205983, 1.0508065, 0.01209785, 0.9927857]
+GT_REWARD_MEAN = None
+GT_REWARD_STD = None
+SPEED_MEAN = None
+SPEED_STD = None
+HEIGHT_MEAN = None
+HEIGHT_STD = None
+DISTANCE_TO_BOTTLE_MEAN = None
+DISTANCE_TO_BOTTLE_STD = None
+DISTANCE_TO_CUBE_MEAN = None
+DISTANCE_TO_CUBE_STD = None
+ENCODED_TRAJECTORIES_MEAN = None
+ENCODED_TRAJECTORIES_STD = None
 
-all_encoded_trajectories_mean = [-0.22682665, -1.2686706, 1.5685039, -1.2785618, 3.4092467, 0.0070117, 0.05656387, -0.01284434, -0.6828233 , -0.27281293, -0.56345856, 0.00778119, -0.12456893, 0.06893575, 0.00524702, 0.2000821]
-all_encoded_trajectories_std = [0.42180222, 1.0952618, 1.9824623, 1.7400833, 0.21317093, 0.01458023, 0.48504975, 0.0102681, 1.1641839, 1.3725176, 0.18389156, 0.01337132, 0.7205983, 1.0508065, 0.01209785, 0.9927857]
+
+def calc_and_set_global_vars(trajs, model, device):
+    horizon = len(trajs[0])
+    avg_gt_rewards = []
+    avg_speeds = []
+    avg_heights = []
+    avg_distance_to_bottles = []
+    avg_distance_to_cubes = []
+    all_encoded_trajectories = []
+
+    for traj in trajs:
+        avg_gt_rewards.append(np.mean([gt_reward(traj[t]) for t in range(horizon)]))
+        avg_speeds.append(np.mean([speed(traj[t]) for t in range(horizon)]))
+        avg_heights.append(np.mean([height(traj[t]) for t in range(horizon)]))
+        avg_distance_to_bottles.append(np.mean([distance_to_bottle(traj[t]) for t in range(horizon)]))
+        avg_distance_to_cubes.append(np.mean([distance_to_cube(traj[t]) for t in range(horizon)]))
+
+        traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
+        rand_traj = torch.rand(traj.shape, device=device)
+        rand_nl = torch.rand(1, BERT_OUTPUT_DIM, device=device)
+        with torch.no_grad():
+            encoded_traj, _, _, _, _ = model((traj, rand_traj, rand_nl))
+            encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
+
+        all_encoded_trajectories.append(encoded_traj)
+
+    global GT_REWARD_MEAN
+    global GT_REWARD_STD
+    global SPEED_MEAN
+    global SPEED_STD
+    global HEIGHT_MEAN
+    global HEIGHT_STD
+    global DISTANCE_TO_BOTTLE_MEAN
+    global DISTANCE_TO_BOTTLE_STD
+    global DISTANCE_TO_CUBE_MEAN
+    global DISTANCE_TO_CUBE_STD
+    global ENCODED_TRAJECTORIES_MEAN
+    global ENCODED_TRAJECTORIES_STD
+
+    GT_REWARD_MEAN = np.mean(avg_gt_rewards)
+    GT_REWARD_STD = np.std(avg_gt_rewards)
+    SPEED_MEAN = np.mean(avg_speeds)
+    SPEED_STD = np.std(avg_speeds)
+    HEIGHT_MEAN = np.mean(avg_heights)
+    HEIGHT_STD = np.std(avg_speeds)
+    DISTANCE_TO_BOTTLE_MEAN = np.mean(avg_distance_to_bottles)
+    DISTANCE_TO_BOTTLE_STD = np.std(avg_speeds)
+    DISTANCE_TO_CUBE_MEAN = np.mean(avg_distance_to_cubes)
+    DISTANCE_TO_CUBE_STD = np.std(avg_speeds)
+    ENCODED_TRAJECTORIES_MEAN = np.mean(all_encoded_trajectories, axis=0)
+    ENCODED_TRAJECTORIES_STD = np.std(all_encoded_trajectories, axis=0)
 
 
 def make_gym_env(seed):
@@ -77,6 +141,10 @@ def load_model(model_path):
 def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', output_dir='', args=None):
     encoder_model, device = load_model(model_path)
 
+    if args['normalize_feature_funcs']:
+        trajs = np.concatenate((np.load(os.path.join(traj_dir, 'train/trajs.npy')), np.load(os.path.join(traj_dir, 'val/trajs.npy'))), axis=0)
+        calc_and_set_global_vars(trajs, encoder_model, device)
+
     def feature_func(traj):
         """Returns the features of the given trajectory, i.e. \Phi(traj).
 
@@ -95,8 +163,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
 
         # Normalize embedding; check that the normalization corresponds to the dataset/model.
-        if "128hidden_expertx50_noise-augmentation10_0.001weightdecay" in model_path and "56x3_expertx50_all-pairs_noise-augmentation10_id-mapping" in traj_dir:
-            encoded_traj = (encoded_traj - all_encoded_trajectories_mean) / all_encoded_trajectories_std
+        if args['normalize_feature_funcs']:
+            encoded_traj = (encoded_traj - ENCODED_TRAJECTORIES_MEAN) / ENCODED_TRAJECTORIES_STD
         return encoded_traj
 
     env = aprel.Environment(gym_env, feature_func)
@@ -167,6 +235,13 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             features[2] = np.mean([height(t) for t in traj])
             features[3] = np.mean([distance_to_bottle(t) for t in traj])
             features[4] = np.mean([distance_to_cube(t) for t in traj])
+
+            if args['normalize_feature_funcs']:
+                features[0] = (features[0] - GT_REWARD_MEAN) / GT_REWARD_STD
+                features[1] = (features[1] - SPEED_MEAN) / SPEED_STD
+                features[2] = (features[2] - HEIGHT_MEAN) / HEIGHT_STD
+                features[3] = (features[3] - DISTANCE_TO_BOTTLE_MEAN) / DISTANCE_TO_BOTTLE_STD
+                features[4] = (features[4] - DISTANCE_TO_CUBE_MEAN) / DISTANCE_TO_CUBE_STD
 
             return features
 
@@ -363,6 +438,7 @@ if __name__ == '__main__':
                         help='The number of greedily chosen candidate queries (reduced set) for batch generation.')
     parser.add_argument('--dpp_gamma', type=int, default=1,
                         help='Gamma parameter for the DPP method: the higher gamma the more important is the acquisition function relative to diversity.')
+    parser.add_argument('--normalize_feature_funcs', action="store_true", help='')
 
 
     args = parser.parse_args()
