@@ -10,7 +10,8 @@ from nl_traj_feature_learning.learn_features import NLTrajAutoencoder, STATE_DIM
 from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 from gpu_utils import determine_default_torch_device
 import robosuite.synthetic_comparisons
-from robosuite.environments.manipulation.lift_features import gt_reward, speed, height, distance_to_bottle, distance_to_cube
+from robosuite.environments.manipulation.lift_features import gt_reward, speed, height, distance_to_bottle, \
+    distance_to_cube
 from bert_preprocessing import preprocess_strings
 
 
@@ -51,7 +52,8 @@ def print_embedding_statistics(model, device, data_dir, val=False):
         val_traj_b_index_file = os.path.join(data_dir, "val/traj_b_indexes.npy")
         val_traj_file = os.path.join(data_dir, "val/trajs.npy")
 
-        train_dataset = NLTrajComparisonDataset(train_nlcomp_index_file, train_traj_a_index_file, train_traj_b_index_file,
+        train_dataset = NLTrajComparisonDataset(train_nlcomp_index_file, train_traj_a_index_file,
+                                                train_traj_b_index_file,
                                                 preprocessed_nlcomps=True, id_mapped=True,
                                                 unique_nlcomp_file=train_unique_nlcomp_file, traj_file=train_traj_file)
         val_dataset = NLTrajComparisonDataset(val_nlcomp_index_file, val_traj_a_index_file, val_traj_b_index_file,
@@ -168,7 +170,8 @@ def print_embedding_statistics(model, device, data_dir, val=False):
     print("neg_dot_prods_std:", neg_dot_prods_std)
 
 
-def find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp, nl_embedding, similarity_metric, trajs_per_policy=3):
+def find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp, nl_embedding, similarity_metric,
+                        trajs_per_policy=3):
     reference_policy_obs = np.load(os.path.join(reference_policy_dir, "traj_observations.npy"))
     reference_policy_act = np.load(os.path.join(reference_policy_dir, "traj_actions.npy"))
     reference_policy_trajs = np.concatenate((reference_policy_obs, reference_policy_act), axis=-1)
@@ -196,7 +199,8 @@ def find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp
 
     for config in os.listdir(policy_dir):
         policy_path = os.path.join(policy_dir, config)
-        if os.path.isdir(policy_path) and os.listdir(policy_path):  # Check that policy_path is a directory and that directory is not empty
+        if os.path.isdir(policy_path) and os.listdir(
+                policy_path):  # Check that policy_path is a directory and that directory is not empty
             # print(policy_path)
             observations = np.load(os.path.join(policy_path, "traj_observations.npy"))
             actions = np.load(os.path.join(policy_path, "traj_actions.npy"))
@@ -233,7 +237,7 @@ def find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp
                     raise NotImplementedError('That similarity metric is not supported yet :(')
 
     print("max_sim_policy:", max_sim_policy)
-    print("max "+similarity_metric+":", max_sim_metric)
+    print("max " + similarity_metric + ":", max_sim_metric)
     return max_sim_policy, max_sim_metric
 
 
@@ -290,11 +294,12 @@ def add_embeddings(model, device, trajectories, reference_traj, nl_embedding, si
 
     # print("max_sim_traj:", max_sim_traj)
     print("encoded_max_sim_traj:", encoded_max_sim_traj)
-    print("max "+similarity_metric+":", max_sim_metric)
+    print("max " + similarity_metric + ":", max_sim_metric)
     return max_sim_traj, max_sim_metric
 
 
-def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embeddings, similarity_metric='log_likelihood'):
+def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embeddings,
+                       similarity_metric='log_likelihood'):
     p = np.random.permutation(n_trajs)
     trajectories = trajectories[p]
     ref_trajs = trajectories[0:n_trajs]
@@ -306,7 +311,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
     for ref_traj in ref_trajs:
         for nl_comp, nl_embedding in zip(nl_comps, nl_embeddings):
             print("Adding embedding for", nl_comp)
-            target_traj, max_similarity = add_embeddings(model, device, trajectories, ref_traj, nl_embedding, similarity_metric)
+            target_traj, max_similarity = add_embeddings(model, device, trajectories, ref_traj, nl_embedding,
+                                                         similarity_metric)
             max_similarities.append(max_similarity)
             # Greater
             if len([adj for adj in robosuite.synthetic_comparisons.greater_gtreward_adjs if adj in nl_comp]) > 0:
@@ -354,7 +360,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     num_incorrect += 1
                     print("Height is actually lesser.")
 
-            elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
+            elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if
+                      adj in nl_comp]) > 0 and "bottle" in nl_comp:
                 ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_bottle(target_traj[t]) for t in range(len(target_traj))]
                 print("ref_traj distance from bottle:", np.mean(ref_traj_feature_values))
@@ -366,7 +373,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     num_incorrect += 1
                     print("Distance is actually lesser.")
 
-            elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
+            elif len([adj for adj in robosuite.synthetic_comparisons.greater_distance_adjs if
+                      adj in nl_comp]) > 0 and "cube" in nl_comp:
                 ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
                 print("ref_traj distance from cube:", np.mean(ref_traj_feature_values))
@@ -424,7 +432,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     num_incorrect += 1
                     print("Height is actually greater.")
 
-            elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "bottle" in nl_comp:
+            elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if
+                      adj in nl_comp]) > 0 and "bottle" in nl_comp:
                 ref_traj_feature_values = [distance_to_bottle(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_bottle(target_traj[t]) for t in range(len(target_traj))]
                 print("ref_traj distance from bottle:", np.mean(ref_traj_feature_values))
@@ -436,7 +445,8 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
                     num_incorrect += 1
                     print("Distance is actually greater.")
 
-            elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if adj in nl_comp]) > 0 and "cube" in nl_comp:
+            elif len([adj for adj in robosuite.synthetic_comparisons.less_distance_adjs if
+                      adj in nl_comp]) > 0 and "cube" in nl_comp:
                 ref_traj_feature_values = [distance_to_cube(ref_traj[t]) for t in range(len(ref_traj))]
                 target_traj_feature_values = [distance_to_cube(target_traj[t]) for t in range(len(target_traj))]
                 print("ref_traj distance from cube:", np.mean(ref_traj_feature_values))
@@ -454,13 +464,15 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
             print('\n')
 
     print("num_correct:", num_correct)
-    print("accuracy:", num_correct / (num_correct+num_incorrect))
+    print("accuracy:", num_correct / (num_correct + num_incorrect))
     print("average max similarity:", np.mean(max_similarities))
 
 
 def find_max_learned_reward(model, device, data_dir, reward_weights):
-    train_trajectories = np.load(os.path.join(data_dir, "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/train/trajs.npy"))
-    val_trajectories = np.load(os.path.join(data_dir, "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/val/trajs.npy"))
+    train_trajectories = np.load(os.path.join(data_dir,
+                                              "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/train/trajs.npy"))
+    val_trajectories = np.load(os.path.join(data_dir,
+                                            "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/val/trajs.npy"))
     trajectories = np.concatenate((train_trajectories, val_trajectories), axis=0)
 
     max_reward = -np.inf
@@ -553,11 +565,10 @@ if __name__ == '__main__':
     elif args.print_statistics:
         print_embedding_statistics(model, device, data_dir, val)
     elif args.find_max_learned_reward:
-        reward_weights = [-0.19836263, -0.51497396, -0.52255324, -0.21383291,  0.02177783, 0.07291293, -0.06299504, -0.23887006, -0.09750498,  0.21410483, 0.45170712,  0.05966022,  0.02516311,  0.20827991,  0.02046715, -0.04970378]
+        reward_weights = [0.20402049, 0.25991385, -0.5954022, -0.20694885, -0.07165222,
+                          0.07121171, -0.18400012, -0.01092284, 0.01058341, 0.25178547,
+                          0.60933999, -0.01200907, 0.05338657, 0.02106549, 0.04632056,
+                          0.09445354]
         find_max_learned_reward(model, device, data_dir, reward_weights)
     else:
         print("Need to specify either --analyze or --visualize or --print-statistics.")
-
-
-
-
