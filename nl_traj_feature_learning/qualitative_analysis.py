@@ -515,20 +515,22 @@ if __name__ == '__main__':
     similarity_metric = args.similarity_metric
 
     model, device = load_model(model_path)
-    if val:
-        nl_comp_file = os.path.join(data_dir, "val/nlcomps.json")
-        traj_file = os.path.join(data_dir, "val/trajs.npy")
-    else:
-        nl_comp_file = os.path.join(data_dir, "train/nlcomps.json")
-        traj_file = os.path.join(data_dir, "train/trajs.npy")
 
-    with open(nl_comp_file, 'rb') as f:
-        nl_comps = json.load(f)
-    trajs = np.load(traj_file)
+    if args.analyze or args.visualize:
+        if val:
+            nl_comp_file = os.path.join(data_dir, "val/nlcomps.json")
+            traj_file = os.path.join(data_dir, "val/trajs.npy")
+        else:
+            nl_comp_file = os.path.join(data_dir, "train/nlcomps.json")
+            traj_file = os.path.join(data_dir, "train/trajs.npy")
 
-    # IMPORTANT: Make this a unique set of nl comps
-    nl_comps = list(set(nl_comps))
-    nl_embeddings = preprocess_strings('', 500, nl_comps)
+        with open(nl_comp_file, 'rb') as f:
+            nl_comps = json.load(f)
+        trajs = np.load(traj_file)
+
+        # IMPORTANT: Make this a unique set of nl comps
+        nl_comps = list(set(nl_comps))
+        nl_embeddings = preprocess_strings('', 500, nl_comps)
 
     if args.analyze:
         n_trajs = args.n_trajs
