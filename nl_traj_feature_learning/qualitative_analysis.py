@@ -458,6 +458,28 @@ def run_accuracy_check(model, device, n_trajs, trajectories, nl_comps, nl_embedd
     print("average max similarity:", np.mean(max_similarities))
 
 
+def find_max_learned_reward(model, device, data_dir, reward_weights):
+    train_trajectories = np.load(os.path.join(data_dir, "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/train/trajs.npy"))
+    val_trajectories = np.load(os.path.join(data_dir, "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/val/trajs.npy"))
+    trajectories = np.concatenate((train_trajectories, val_trajectories), axis=0)
+
+    max_reward = -np.inf
+    max_reward_traj_i = None
+    for i, traj in enumerate(trajectories):
+        traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
+        rand_traj = torch.rand(traj.shape, device=device)
+        rand_nl = torch.rand(1, BERT_OUTPUT_DIM, device=device)
+        with torch.no_grad():
+            encoded_traj, _, _, _, _ = model((traj, rand_traj, rand_nl))
+            encoded_traj = encoded_traj.squeeze().detach().cpu().numpy()
+        traj_reward = np.dot(reward_weights, encoded_traj)
+        if traj_reward > max_reward:
+            max_reward = traj_reward
+            max_reward_traj_i = i
+    print("Trajectory with highest returns:", max_reward_traj_i)
+    print("Reward:", max_reward)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--seed', type=int, default=0, help='')
@@ -478,6 +500,9 @@ if __name__ == '__main__':
 
     # Arguments needed for --print-statistics
     parser.add_argument('--print-statistics', action="store_true", help='')
+
+    # Arguments needed for --print-statistics
+    parser.add_argument('--find-max-learned-reward', action="store_true", help='')
 
     args = parser.parse_args()
 
@@ -525,6 +550,9 @@ if __name__ == '__main__':
         find_closest_policy(model, device, policy_dir, reference_policy_dir, nl_comp, nl_embedding, similarity_metric)
     elif args.print_statistics:
         print_embedding_statistics(model, device, data_dir, val)
+    elif args.find_max_learned_reward:
+        reward_weights = [-0.19836263, -0.51497396, -0.52255324, -0.21383291,  0.02177783, 0.07291293, -0.06299504, -0.23887006, -0.09750498,  0.21410483, 0.45170712,  0.05966022,  0.02516311,  0.20827991,  0.02046715, -0.04970378]
+        find_max_learned_reward(model, device, data_dir, reward_weights)
     else:
         print("Need to specify either --analyze or --visualize or --print-statistics.")
 
