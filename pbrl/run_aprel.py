@@ -329,6 +329,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         val_accuracies = []
     for query_no in range(args['num_iterations']):
         # Optimize the query
+        print("Finding optimized query...")
         queries, objective_values = query_optimizer.optimize(args['acquisition'], belief,
                                                              query, batch_size=args['batch_size'],
                                                              optimization_method=args['optim_method'],
@@ -339,8 +340,10 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
         # Ask the query to the human
         responses = true_user.respond(queries)
+        print("Response:", responses[0])
 
         # Update belief
+        print("Updating belief via sampling...")
         initial_sampling_param = {"weights": [0 for _ in range(features_dim)]}
         if args['query_type'] == 'preference':
             belief.update(aprel.Preference(queries[0], responses[0]), initial_point=initial_sampling_param)
@@ -351,7 +354,6 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
         print('Estimated user parameters: ' + str(belief.mean))
 
-        print("Response:", responses[0])
         if not human_user:
             true_user_rewards = true_user.reward(queries[0].slate)
             correct_true_user_response = np.argmax(true_user_rewards)
