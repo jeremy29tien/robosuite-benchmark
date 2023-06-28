@@ -469,7 +469,7 @@ if __name__ == '__main__':
     parser.add_argument('--sim-user-beta', type=float, default=1.0, help='')
     parser.add_argument('--output-dir', type=str, default='', help='')
     parser.add_argument('--query_type', type=str, default='preference',
-                        help='Type of the queries that will be actively asked to the user. Options: preference, weak_comparison, full_ranking.')
+                        help='Type of the queries that will be actively asked to the user. Options: preference, nl_command, weak_comparison, full_ranking.')
     parser.add_argument('--query_size', type=int, default=2,
                         help='Number of trajectories in each query.')
     parser.add_argument('--num_iterations', type=int, default=10,
