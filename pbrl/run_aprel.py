@@ -267,7 +267,6 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         user_model = aprel.SoftmaxUser(params)
         belief = aprel.SamplingBasedBelief(user_model, [], params)
     print('Estimated user parameters: ' + str(belief.mean))
-    print('User params:', user_model.params)
 
     # Initialize a dummy query so that the query optimizer will generate queries of the same kind
     if args['query_type'] == 'preference':
@@ -369,20 +368,23 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             else:
                 num_correct += 1
 
-        # TODO: Question: why can't we use the already implemented `loglikelihood` function in SoftmaxUser? We're
-        #  essentially reimplementing that below.
+        # Question: why can't we use the already implemented `loglikelihood` function in SoftmaxUser? We're
+        # essentially reimplementing that below.
+        # Answer: We can, but the current user_model object was initialized with random weights, not the updated
+        # weights belief.mean['weights'].
         if args['query_type'] == 'preference':
             ll = np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
-            print("Our weights:", belief.mean['weights'])
-            print("User class reward:", user_model.params['weights'])
             ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
                 np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
             ll = np.log(ll)
             print("log likelihood:", ll)
             log_likelihoods.append(ll)
 
-            user_ll = user_model.loglikelihood(aprel.Preference(queries[0], responses[0]))
-            print("log likelihood from User class:", user_ll)
+            eval_params = {'weights': belief.mean['weights']}
+            eval_user_model = aprel.SoftmaxUser(eval_params)
+            eval_ll = eval_user_model.loglikelihood(aprel.Preference(queries[0], responses[0]))
+            print("test log likelihood:", eval_ll)
+
         elif args['query_type'] == 'nl_command':
             # 1. Calculate log likelihood of response.
             # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
