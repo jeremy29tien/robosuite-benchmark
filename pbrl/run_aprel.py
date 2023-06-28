@@ -359,7 +359,14 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         print('Estimated user parameters: ' + str(belief.mean))
 
         if not human_user:
-            correct_true_user_response = np.argmax(true_user.response_logprobabilities(queries[0]))
+            if args['query_type'] == 'preference':
+                correct_true_user_response = np.argmax(true_user.response_logprobabilities(queries[0]))
+            elif args['query_type'] == 'nl_command':
+                correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(queries[0]))
+                correct_true_user_response = queries[0].response_set[correct_true_user_response_i]
+            else:
+                raise NotImplementedError('Unknown query type.')
+
             print("Correct response (based on true reward):", correct_true_user_response)
             if responses[0] != correct_true_user_response:
                 print("Simulated human answered incorrectly!")
@@ -411,6 +418,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 val_num_incorrect = 0
                 for i in range(val_trajectory_set.size):
                     for j in range(i+1, val_trajectory_set.size):
+                        # Log likelihood under learned reward
                         if args['query_type'] == 'preference':
                             val_query = aprel.PreferenceQuery([val_trajectory_set[i], val_trajectory_set[j]])
                             val_response = true_user.respond(val_query)
@@ -423,9 +431,17 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                             print('log likelihood calculation not supported for this query type yet.')
 
                         val_lls.append(ll)
-                        # TODO: Change the following to be based on the argmax of the loglikelihood function.
-                        # if val_response[0] != np.argmax(true_user.reward(val_query.slate)):
-                        if val_response[0] != np.argmax(true_user.response_logprobabilities(val_query)):
+
+                        # Simulated user accuracy
+                        if args['query_type'] == 'preference':
+                            correct_true_user_response = np.argmax(true_user.response_logprobabilities(queries[0]))
+                        elif args['query_type'] == 'nl_command':
+                            correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(queries[0]))
+                            correct_true_user_response = queries[0].response_set[correct_true_user_response_i]
+                        else:
+                            raise NotImplementedError('Unknown query type.')
+
+                        if val_response[0] != correct_true_user_response:
                             val_num_incorrect += 1
                         else:
                             val_num_correct += 1
