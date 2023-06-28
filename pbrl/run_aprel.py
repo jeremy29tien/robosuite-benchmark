@@ -372,8 +372,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         #  essentially reimplementing that below.
         if args['query_type'] == 'preference':
             ll = np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
-            print("Our reward:", np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
-            print("User class reward:", user_model.reward(queries[0].slate[int(responses[0])]))
+            print("Our weights:", belief.mean['weights'])
+            print("User class reward:", user_model.params['weights'])
             ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
                 np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
             ll = np.log(ll)
