@@ -272,6 +272,18 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     if args['query_type'] == 'preference':
         query = aprel.PreferenceQuery(trajectory_set[:args['query_size']])
     elif args['query_type'] == 'nl_command':
+        assert traj_dir != ''
+        nl_comp_file = os.path.join(traj_dir, "train/unique_nlcomps_for_aprel.json")
+        with open(nl_comp_file, 'rb') as f:
+            nl_comps = json.load(f)
+
+        try:
+            nl_embedding_file = os.path.join(traj_dir, "train/unique_nlcomps_for_aprel.npy")
+            nl_embeddings = np.load(nl_embedding_file)
+        except FileNotFoundError:
+            # Preprocess strings using BERT
+            nl_embeddings = preprocess_strings('', 500, nl_comps)
+        assert len(nl_comps) == len(nl_embeddings)
 
         def lang_encoder_func(in_str: str) -> np.array:
             """Returns encoded version of in_str, i.e. \Phi(in_str).
@@ -282,20 +294,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             Returns:
                 enc_str: a numpy vector corresponding the encoded string
             """
-            assert traj_dir != ''
-            nl_comp_file = os.path.join(traj_dir, "train/unique_nlcomps_for_aprel.json")
-            with open(nl_comp_file, 'rb') as f:
-                nl_comps = json.load(f)
-
-            try:
-                nl_embedding_file = os.path.join(traj_dir, "train/unique_nlcomps_for_aprel.npy")
-                nl_embeddings = np.load(nl_embedding_file)
-            except FileNotFoundError:
-                # Preprocess strings using BERT
-                nl_embeddings = preprocess_strings('', 500, nl_comps)
-
             enc_str = None
-            assert len(nl_comps) == len(nl_embeddings)
             for i in range(len(nl_comps)):
                 if nl_comps[i] == in_str:
                     enc_str = nl_embeddings[i]
@@ -312,7 +311,12 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
             return enc_str
 
-        query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], lang_encoder_func)
+        free_input = False
+        print("free_input is", free_input)
+        if free_input:
+            query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], lang_encoder_func)
+        else:
+            query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], lang_encoder_func, nl_comps, nl_embeddings)
     elif args['query_type'] == 'weak_comparison':
         query = aprel.WeakComparisonQuery(trajectory_set[:args['query_size']])
     elif args['query_type'] == 'full_ranking':
@@ -373,6 +377,13 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             ll = np.log(ll)
             print("log likelihood:", ll)
             log_likelihoods.append(ll)
+
+            user_ll = user_model.loglikelihood(aprel.Preference(queries[0], responses[0]))
+            print("log likelihood from User class:", user_ll)
+        elif args['query_type'] == 'nl_command':
+            # 1. Calculate log likelihood of response.
+            # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
+            pass
         else:
             print('log likelihood calculation not supported for this query type yet.')
 
