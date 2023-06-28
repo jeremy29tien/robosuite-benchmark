@@ -359,8 +359,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         print('Estimated user parameters: ' + str(belief.mean))
 
         if not human_user:
-            true_user_rewards = true_user.reward(queries[0].slate)
-            correct_true_user_response = np.argmax(true_user_rewards)
+            correct_true_user_response = np.argmax(true_user.response_logprobabilities(queries[0]))
             print("Correct response (based on true reward):", correct_true_user_response)
             if responses[0] != correct_true_user_response:
                 print("Simulated human answered incorrectly!")
