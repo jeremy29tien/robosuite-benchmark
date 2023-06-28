@@ -267,6 +267,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         user_model = aprel.SoftmaxUser(params)
         belief = aprel.SamplingBasedBelief(user_model, [], params)
     print('Estimated user parameters: ' + str(belief.mean))
+    print('User params:', user_model.params)
 
     # Initialize a dummy query so that the query optimizer will generate queries of the same kind
     if args['query_type'] == 'preference':
