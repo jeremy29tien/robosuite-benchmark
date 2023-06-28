@@ -248,9 +248,16 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         # For the 'true' user reward, use a random length 5 vector
         # (user reward depends on gt_reward, speed, height, distance to bottle, distance to cube)
         true_features_dim = 5
-        true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
-                       'beta': args['sim_user_beta'],
-                       'feature_func': true_user_feature_func}
+        if args['query_type'] == 'nl_command':
+            # NLCommandQuery requires the trajectory_set as one of the params
+            true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
+                           'beta': args['sim_user_beta'],
+                           'feature_func': true_user_feature_func,
+                           'trajectory_set': trajectory_set}
+        else:
+            true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
+                           'beta': args['sim_user_beta'],
+                           'feature_func': true_user_feature_func}
         print("True user parameters:", true_params['weights'])
         true_user = aprel.CustomFeatureUser(true_params)
 
