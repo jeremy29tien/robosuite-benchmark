@@ -427,7 +427,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                             # Log likelihood under learned reward
                             val_query = aprel.PreferenceQuery([val_trajectory_set[i], val_trajectory_set[j]])
                             val_response = true_user.respond(val_query)
-                            ll = eval_user_model.loglikelihood(aprel.Preference(val_query[0], val_response[0]))
+                            ll = eval_user_model.loglikelihood(aprel.Preference(val_query, val_response[0]))
                             val_lls.append(ll)
 
                             # Simulated user accuracy
@@ -442,7 +442,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                         val_query = queries[0].copy()
                         val_query.slate = [val_trajectory_set[i]]
                         val_response = true_user.respond(val_query)
-                        ll = eval_user_model.loglikelihood(aprel.NLCommand(val_query[0], val_response[0]))
+                        ll = eval_user_model.loglikelihood(aprel.NLCommand(val_query, val_response[0]))
                         val_lls.append(ll)
 
                         correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(val_query[0]))
