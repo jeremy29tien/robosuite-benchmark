@@ -250,15 +250,16 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         true_features_dim = 5
         if args['query_type'] == 'nl_command':
             # NLCommandQuery requires the trajectory_set as one of the params
-            true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
+            # true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
+            #                'beta': args['sim_user_beta'],
+            #                'feature_func': true_user_feature_func,
+            #                'trajectory_set': trajectory_set}
+            true_params = {'weights': np.array([1, 0, 0, 0, 0]),
                            'beta': args['sim_user_beta'],
                            'feature_func': true_user_feature_func,
                            'trajectory_set': trajectory_set}
         else:
-            # true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
-            #                'beta': args['sim_user_beta'],
-            #                'feature_func': true_user_feature_func}
-            true_params = {'weights': np.array([1, 0, 0, 0, 0]),
+            true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
                            'beta': args['sim_user_beta'],
                            'feature_func': true_user_feature_func}
         print("True user parameters:", true_params['weights'])
