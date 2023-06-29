@@ -381,77 +381,80 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             else:
                 num_correct += 1
 
-        # Question: why can't we use the already implemented `loglikelihood` function in SoftmaxUser? We're
-        # essentially reimplementing that below.
-        # Answer: We can, but the current user_model object was initialized with random weights, not the updated
-        # weights belief.mean['weights'].
-        if args['query_type'] == 'preference':
-            # Old way, without reusing code (but maybe more efficient with garbage collection?)
-            # ll = np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
-            # ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
-            #     np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
-            # ll = np.log(ll)
+            # Question: why can't we use the already implemented `loglikelihood` function in SoftmaxUser? We're
+            # essentially reimplementing that below.
+            # Answer: We can, but the current user_model object was initialized with random weights, not the updated
+            # weights belief.mean['weights'].
+            if args['query_type'] == 'preference':
+                # Old way, without reusing code (but maybe more efficient with garbage collection?)
+                # ll = np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features))
+                # ll /= np.exp(np.dot(belief.mean['weights'], queries[0].slate[int(responses[0])].features)) + np.exp(
+                #     np.dot(belief.mean['weights'], queries[0].slate[1-int(responses[0])].features))
+                # ll = np.log(ll)
 
-            latest_params = {'weights': belief.mean['weights']}
-            eval_user_model = aprel.SoftmaxUser(latest_params)
-            ll = eval_user_model.loglikelihood(aprel.Preference(queries[0], responses[0]))
-            print("log likelihood:", ll)
-            log_likelihoods.append(ll)
+                latest_params = {'weights': belief.mean['weights']}
+                eval_user_model = aprel.SoftmaxUser(latest_params)
+                ll = eval_user_model.loglikelihood(aprel.Preference(queries[0], responses[0]))
+                print("log likelihood:", ll)
+                log_likelihoods.append(ll)
 
-        elif args['query_type'] == 'nl_command':
-            # 1. Calculate log likelihood of response.
-            latest_params = {'weights': belief.mean['weights'],
-                             'trajectory_set': trajectory_set}
-            eval_user_model = aprel.SoftmaxUser(latest_params)
-            ll = eval_user_model.loglikelihood(aprel.NLCommand(queries[0], responses[0]))
-            print("log likelihood:", ll)
-            log_likelihoods.append(ll)
-            
-            # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
+            elif args['query_type'] == 'nl_command':
+                # 1. Calculate log likelihood of response.
+                latest_params = {'weights': belief.mean['weights'],
+                                 'trajectory_set': trajectory_set}
+                eval_user_model = aprel.SoftmaxUser(latest_params)
+                ll = eval_user_model.loglikelihood(aprel.NLCommand(queries[0], responses[0]))
+                print("log likelihood:", ll)
+                log_likelihoods.append(ll)
 
-            pass
-        else:
-            print('log likelihood calculation not supported for this query type yet.')
+                # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
+            else:
+                print('log likelihood calculation not supported for this query type yet.')
 
-        if output_dir != '':
-            np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
-            np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
+            if output_dir != '':
+                np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
+                np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
 
-        # Compute log likelihood on the set of val trajectories.
-        if args['query_type'] in ['preference', 'nl_command']:
+            # Compute log likelihood on the set of val trajectories.
+            # if args['query_type'] in ['preference', 'nl_command']:
             if val_trajectory_set is not None:
                 val_lls = []
                 val_num_correct = 0
                 val_num_incorrect = 0
-                for i in range(val_trajectory_set.size):
-                    for j in range(i+1, val_trajectory_set.size):
-                        # Log likelihood under learned reward
-                        if args['query_type'] == 'preference':
+                if args['query_type'] == 'preference':
+                    for i in range(val_trajectory_set.size):
+                        for j in range(i+1, val_trajectory_set.size):
+                            # Log likelihood under learned reward
                             val_query = aprel.PreferenceQuery([val_trajectory_set[i], val_trajectory_set[j]])
                             val_response = true_user.respond(val_query)
-                            ll = eval_user_model.loglikelihood(aprel.Preference(queries[0], responses[0]))
-                        elif args['query_type'] == 'nl_command':
-                            val_query = aprel.NLCommandQuery([val_trajectory_set[i], val_trajectory_set[j]])
-                            val_response = true_user.respond(val_query)
-                            ll = eval_user_model.loglikelihood(aprel.NLCommand(queries[0], responses[0]))
-                        else:
-                            print('log likelihood calculation not supported for this query type yet.')
+                            ll = eval_user_model.loglikelihood(aprel.Preference(val_query[0], val_response[0]))
+                            val_lls.append(ll)
 
+                            # Simulated user accuracy
+                            correct_true_user_response = np.argmax(true_user.response_logprobabilities(val_query[0]))
+
+                            if val_response[0] != correct_true_user_response:
+                                val_num_incorrect += 1
+                            else:
+                                val_num_correct += 1
+                elif args['query_type'] == 'nl_command':
+                    for i in range(val_trajectory_set.size):
+                        val_query = queries[0].copy()
+                        val_query.slate = [val_trajectory_set[i]]
+                        val_response = true_user.respond(val_query)
+                        ll = eval_user_model.loglikelihood(aprel.NLCommand(val_query[0], val_response[0]))
                         val_lls.append(ll)
 
-                        # Simulated user accuracy
-                        if args['query_type'] == 'preference':
-                            correct_true_user_response = np.argmax(true_user.response_logprobabilities(queries[0]))
-                        elif args['query_type'] == 'nl_command':
-                            correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(queries[0]))
-                            correct_true_user_response = queries[0].response_set[correct_true_user_response_i]
-                        else:
-                            raise NotImplementedError('Unknown query type.')
+                        correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(val_query[0]))
+                        correct_true_user_response = val_query[0].response_set[correct_true_user_response_i]
 
-                        if val_response[0] != correct_true_user_response:
+                        if np.any(val_response[0] != correct_true_user_response):
                             val_num_incorrect += 1
                         else:
                             val_num_correct += 1
+                else:
+                    print('log likelihood calculation not supported for this query type yet.')
+
                 print("validation log likelihood:", np.mean(val_lls))
                 val_log_likelihoods.append(np.mean(val_lls))
                 val_accuracy = val_num_correct / (val_num_correct + val_num_incorrect)
@@ -460,9 +463,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                     np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
                     np.save(os.path.join(output_dir, 'simuser_val_accuracies.npy'), val_accuracies)
 
-    if not human_user:
-        train_accuracy = num_correct / (num_correct + num_incorrect)
-        print("Accuracy of simulated user during active learning:", train_accuracy)
+            train_accuracy = num_correct / (num_correct + num_incorrect)
+            print("Accuracy of simulated user during active learning:", train_accuracy)
 
 
 if __name__ == '__main__':
