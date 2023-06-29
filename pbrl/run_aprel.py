@@ -375,7 +375,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 raise NotImplementedError('Unknown query type.')
 
             print("Correct response (based on true reward):", correct_true_user_response)
-            if responses[0] != correct_true_user_response:
+            if np.any(responses[0] != correct_true_user_response):
                 print("Simulated human answered incorrectly!")
                 num_incorrect += 1
             else:
