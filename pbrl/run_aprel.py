@@ -339,6 +339,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         num_incorrect = 0
         val_accuracies = []
     for query_no in range(args['num_iterations']):
+        print("\n\nIteration"+str(query_no)+":")
         # Optimize the query
         print("Finding optimized query...")
         queries, objective_values = query_optimizer.optimize(args['acquisition'], belief,
@@ -375,6 +376,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 raise NotImplementedError('Unknown query type.')
 
             print("Correct response (based on true reward):", correct_true_user_response)
+            print("Translated:", queries[0].nl_comps[correct_true_user_response_i])
             if np.any(responses[0] != correct_true_user_response):
                 print("Simulated human answered incorrectly!")
                 num_incorrect += 1
