@@ -255,7 +255,10 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                            'feature_func': true_user_feature_func,
                            'trajectory_set': trajectory_set}
         else:
-            true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
+            # true_params = {'weights': aprel.util_funs.get_random_normalized_vector(true_features_dim),
+            #                'beta': args['sim_user_beta'],
+            #                'feature_func': true_user_feature_func}
+            true_params = {'weights': np.array([1, 0, 0, 0, 0]),
                            'beta': args['sim_user_beta'],
                            'feature_func': true_user_feature_func}
         print("True user parameters:", true_params['weights'])
@@ -369,19 +372,25 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         if not human_user:
             if args['query_type'] == 'preference':
                 correct_true_user_response = np.argmax(true_user.response_logprobabilities(queries[0]))
+                print("Correct response (based on true reward):", correct_true_user_response)
+                if responses[0] != correct_true_user_response:
+                    print("Simulated human answered incorrectly!")
+                    num_incorrect += 1
+                else:
+                    num_correct += 1
+
             elif args['query_type'] == 'nl_command':
                 correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(queries[0]))
                 correct_true_user_response = queries[0].response_set[correct_true_user_response_i]
+                print("Correct response (based on true reward):", correct_true_user_response)
+                print("Translated:", queries[0].nl_comps[correct_true_user_response_i])
+                if np.any(responses[0] != correct_true_user_response):
+                    print("Simulated human answered incorrectly!")
+                    num_incorrect += 1
+                else:
+                    num_correct += 1
             else:
                 raise NotImplementedError('Unknown query type.')
-
-            print("Correct response (based on true reward):", correct_true_user_response)
-            print("Translated:", queries[0].nl_comps[correct_true_user_response_i])
-            if np.any(responses[0] != correct_true_user_response):
-                print("Simulated human answered incorrectly!")
-                num_incorrect += 1
-            else:
-                num_correct += 1
 
             # Question: why can't we use the already implemented `loglikelihood` function in SoftmaxUser? We're
             # essentially reimplementing that below.
