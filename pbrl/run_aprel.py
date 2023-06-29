@@ -441,8 +441,11 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                     for i in range(val_trajectory_set.size):
                         val_query = queries[0].copy()
                         val_query.slate = [val_trajectory_set[i]]
+                        print("Responding...")
                         val_response = true_user.respond(val_query)
+                        print("Compute LL...")
                         ll = eval_user_model.loglikelihood(aprel.NLCommand(val_query, val_response[0]))
+                        print("Done computing LL.")
                         val_lls.append(ll)
 
                         correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(val_query))
