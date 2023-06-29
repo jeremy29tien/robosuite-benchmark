@@ -462,9 +462,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 if output_dir != '':
                     np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
                     np.save(os.path.join(output_dir, 'simuser_val_accuracies.npy'), val_accuracies)
-
-            train_accuracy = num_correct / (num_correct + num_incorrect)
-            print("Accuracy of simulated user during active learning:", train_accuracy)
+    if not human_user:
+        train_accuracy = num_correct / (num_correct + num_incorrect)
+        print("Accuracy of simulated user during active learning:", train_accuracy)
 
 
 if __name__ == '__main__':
