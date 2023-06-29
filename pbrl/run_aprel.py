@@ -431,7 +431,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                             val_lls.append(ll)
 
                             # Simulated user accuracy
-                            correct_true_user_response = np.argmax(true_user.response_logprobabilities(val_query[0]))
+                            correct_true_user_response = np.argmax(true_user.response_logprobabilities(val_query))
 
                             if val_response[0] != correct_true_user_response:
                                 val_num_incorrect += 1
@@ -445,8 +445,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                         ll = eval_user_model.loglikelihood(aprel.NLCommand(val_query, val_response[0]))
                         val_lls.append(ll)
 
-                        correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(val_query[0]))
-                        correct_true_user_response = val_query[0].response_set[correct_true_user_response_i]
+                        correct_true_user_response_i = np.argmax(true_user.response_logprobabilities(val_query))
+                        correct_true_user_response = val_query.response_set[correct_true_user_response_i]
 
                         if np.any(val_response[0] != correct_true_user_response):
                             val_num_incorrect += 1
