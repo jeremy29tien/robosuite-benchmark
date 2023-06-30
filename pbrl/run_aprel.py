@@ -311,7 +311,10 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                     enc_str = nl_embeddings[i]
                     break
             if enc_str is None:
-                raise ValueError("in_str must be a valid string, was instead:" + in_str)
+                if args['free_input']:
+                    enc_str = preprocess_strings('', 500, [in_str])
+                else:
+                    raise ValueError("in_str must be a valid string, was instead:" + in_str)
 
             # Encode BERT-preprocessed string using learned model
             enc_str = torch.unsqueeze(torch.as_tensor(enc_str, dtype=torch.float32, device=device), 0)
@@ -322,9 +325,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
             return enc_str
 
-        free_input = False
-        print("free_input is", free_input)
-        if free_input:
+        print("free_input is", args['free_input'])
+        if args['free_input']:
             query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], lang_encoder_func)
         else:
             query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], lang_encoder_func, nl_comps, nl_embeddings)
@@ -514,6 +516,7 @@ if __name__ == '__main__':
     parser.add_argument('--dpp_gamma', type=int, default=1,
                         help='Gamma parameter for the DPP method: the higher gamma the more important is the acquisition function relative to diversity.')
     parser.add_argument('--normalize_feature_funcs', action="store_true", help='')
+    parser.add_argument('--free_input', action="store_true", help='')
 
 
     args = parser.parse_args()
