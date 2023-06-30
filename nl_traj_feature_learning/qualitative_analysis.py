@@ -576,10 +576,10 @@ if __name__ == '__main__':
     elif args.print_statistics:
         print_embedding_statistics(model, device, data_dir, val)
     elif args.find_max_learned_reward:
-        reward_weights = [9.28149829e-01, 1.23484870e-01, 1.41403751e-01, 7.10180900e-02,
-                          1.29325538e-01, 1.80697909e-02, 7.17607205e-02, -1.95250937e-02,
-                          1.71412249e-01, -1.05951235e-01, -1.75150077e-01, 2.08521129e-02,
-                          -3.25011003e-02, -2.20392004e-06, -6.95272852e-03, 5.33245248e-02]
+        reward_weights = [0.56703316, 0.02607777, -0.18133159, -0.00625244, -0.47018333,
+                          -0.04049451, 0.1307801, 0.13914077, -0.43565571, -0.24585298,
+                          -0.23742123, -0.05678972, 0.03918925, -0.19941977, 0.17113587,
+                          0.07261079]
         find_max_learned_reward(model, device, data_dir, reward_weights)
     else:
         print("Need to specify either --analyze or --visualize or --print-statistics.")
