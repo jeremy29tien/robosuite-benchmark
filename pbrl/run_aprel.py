@@ -338,6 +338,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
     log_likelihoods = []
     val_log_likelihoods = []
+    best_traj_true_rewards = []
     if not human_user:
         num_correct = 0
         num_incorrect = 0
@@ -420,12 +421,19 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 log_likelihoods.append(ll)
 
                 # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
+                learned_rewards = eval_user_model.reward(eval_user_model.params['trajectory_set'])
+                best_traj_i = np.argmax(learned_rewards)
+                best_traj = eval_user_model.params['trajectory_set'][best_traj_i]
+                true_reward = true_user.reward(best_traj)
+                best_traj_true_rewards.append(true_reward)
+                print("True reward of best trajectory under learned reward:", true_reward)
             else:
                 print('log likelihood calculation not supported for this query type yet.')
 
             if output_dir != '':
                 np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
                 np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
+                np.save(os.path.join(output_dir, 'best_traj_true_rewards.npy'), best_traj_true_rewards)
 
             # Compute log likelihood on the set of val trajectories.
             # if args['query_type'] in ['preference', 'nl_command']:
