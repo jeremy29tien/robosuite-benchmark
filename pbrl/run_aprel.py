@@ -421,6 +421,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 log_likelihoods.append(ll)
 
                 # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
+                print("eval_user_model.params['trajectory_set']:", eval_user_model.params['trajectory_set'])
                 learned_rewards = eval_user_model.reward(eval_user_model.params['trajectory_set'])
                 best_traj_i = np.argmax(learned_rewards)
                 best_traj = eval_user_model.params['trajectory_set'][best_traj_i]
