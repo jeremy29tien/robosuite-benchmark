@@ -474,9 +474,16 @@ def find_max_learned_reward(model, device, data_dir, reward_weights):
     val_trajectories = np.load(os.path.join(data_dir,
                                             "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/val/trajs.npy"))
     trajectories = np.concatenate((train_trajectories, val_trajectories), axis=0)
+    train_trajectory_video_ids = np.load(os.path.join(data_dir,
+                                              "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/train/traj_video_ids.npy.npy"))
+    val_trajectory_video_ids = np.load(os.path.join(data_dir,
+                                            "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/val/traj_video_ids.npy.npy"))
+    trajectory_video_ids = np.concatenate((train_trajectory_video_ids, val_trajectory_video_ids), axis=0)
 
     max_reward = -np.inf
     max_reward_traj_i = None
+    max_reward_traj_video = None
+    max_reward_traj = None
     for i, traj in enumerate(trajectories):
         traj = torch.unsqueeze(torch.as_tensor(traj, dtype=torch.float32, device=device), 0)
         rand_traj = torch.rand(traj.shape, device=device)
@@ -489,8 +496,9 @@ def find_max_learned_reward(model, device, data_dir, reward_weights):
             max_reward = traj_reward
             max_reward_traj_i = i
     max_reward_traj = trajectories[max_reward_traj_i]
+    max_reward_traj_video = trajectory_video_ids[max_reward_traj_i]
     true_reward = [gt_reward(t) for t in max_reward_traj]
-    print("Trajectory with highest returns:", max_reward_traj_i)
+    print("Trajectory with highest returns:", max_reward_traj_video)
     print("Reward:", max_reward)
     print("True reward:", np.mean(true_reward))
 
