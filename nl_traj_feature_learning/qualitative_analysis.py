@@ -488,8 +488,11 @@ def find_max_learned_reward(model, device, data_dir, reward_weights):
         if traj_reward > max_reward:
             max_reward = traj_reward
             max_reward_traj_i = i
+    max_reward_traj = trajectories[max_reward_traj_i]
+    true_reward = [gt_reward(t) for t in max_reward_traj]
     print("Trajectory with highest returns:", max_reward_traj_i)
     print("Reward:", max_reward)
+    print("True reward:", np.mean(true_reward))
 
 
 if __name__ == '__main__':
