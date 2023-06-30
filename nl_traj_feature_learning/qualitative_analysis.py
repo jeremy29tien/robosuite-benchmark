@@ -475,9 +475,9 @@ def find_max_learned_reward(model, device, data_dir, reward_weights):
                                             "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/val/trajs.npy"))
     trajectories = np.concatenate((train_trajectories, val_trajectories), axis=0)
     train_trajectory_video_ids = np.load(os.path.join(data_dir,
-                                              "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/train/traj_video_ids.npy.npy"))
+                                              "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/train/traj_video_ids.npy"))
     val_trajectory_video_ids = np.load(os.path.join(data_dir,
-                                            "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/val/traj_video_ids.npy.npy"))
+                                            "nl-traj/56x3_expertx50_all-pairs_noise-augmentation10_id-mapping_with-videos_seed251/val/traj_video_ids.npy"))
     trajectory_video_ids = np.concatenate((train_trajectory_video_ids, val_trajectory_video_ids), axis=0)
 
     max_reward = -np.inf
