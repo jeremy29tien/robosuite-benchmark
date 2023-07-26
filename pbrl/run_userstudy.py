@@ -95,6 +95,7 @@ if __name__ == '__main__':
     # parser.add_argument('--normalize_feature_funcs', action="store_true", help='')
     parser.add_argument('--free_input', action="store_true", help='')
     parser.add_argument('--treatment_order', type=str, default='AB')
+    parser.add_argument('--user_id', type=str, default='jtien')
     parser.add_argument('--verbose', action="store_true", help='')
 
     args = parser.parse_args()
@@ -108,21 +109,30 @@ if __name__ == '__main__':
     args['normalize_feature_funcs'] = True
     args['distance_metric_for_batches'] = aprel.default_query_distance
 
-    nlcommand_output_dir = 'robosuite-benchmark/pbrl/results/human_user/128hidden_expertx50_noise-augmentation10_0.001weightdecay_nlcommand_normalizefeaturefuncs'
-    preference_output_dir = 'robosuite-benchmark/pbrl/results/human_user/128hidden_expertx50_noise-augmentation10_0.001weightdecay_preference_normalizefeaturefuncs'
+    user_results_dir = os.path.join('robosuite-benchmark/pbrl/results/human_user', args['user_id'])
+    nlcommand_output_dir = os.path.join(user_results_dir, '128hidden_expertx50_noise-augmentation10_0.001weightdecay_nlcommand_normalizefeaturefuncs')
+    preference_output_dir = os.path.join(user_results_dir, '128hidden_expertx50_noise-augmentation10_0.001weightdecay_preference_normalizefeaturefuncs')
+    try:
+        os.makedirs(nlcommand_output_dir, exist_ok=True)
+    except OSError as error:
+        print("Directory '%s' can not be created" % nlcommand_output_dir)
+    try:
+        os.makedirs(preference_output_dir, exist_ok=True)
+    except OSError as error:
+        print("Directory '%s' can not be created" % preference_output_dir)
 
     if args['treatment_order'] == 'AB':
         # Treatment A
-        nlcommand_valdata, trajectory_set = treatment_A()
+        nlcommand_valdata, trajectory_set, nlcommand_best_traj = treatment_A()
 
         # Treatment B
-        preference_valdata, _ = treatment_B()
+        preference_valdata, _, preference_best_traj = treatment_B()
     else:
         # Treatment B
-        preference_valdata, _ = treatment_B()
+        preference_valdata, _, preference_best_traj = treatment_B()
 
         # Treatment A
-        nlcommand_valdata, trajectory_set = treatment_A()
+        nlcommand_valdata, trajectory_set, nlcommand_best_traj = treatment_A()
 
     val_data = nlcommand_valdata + preference_valdata
 
@@ -131,5 +141,13 @@ if __name__ == '__main__':
 
     # Evaluate Treatment B
     eval_treatment_B()
+
+    print("Final Question: Which trajectory is the best?")
+    print("Playing trajectory #0")
+    nlcommand_best_traj.visualize()
+    print("Playing trajectory #1")
+    preference_best_traj.visualize()
+    answer = input("Enter a number: [0-1]: ")
+    np.save(os.path.join(user_results_dir, 'final_answer.npy'), answer)
 
 

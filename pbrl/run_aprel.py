@@ -347,6 +347,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     if human_user:
         val_data = []  # This is a list of validation data collected from the human user.
         best_traj_ids = []
+        best_traj = None
     else:
         best_traj_true_rewards = []
         num_correct = 0
@@ -418,7 +419,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 end_i = best_traj_path.rindex('.')
                 best_traj_id = best_traj_path[start_i:end_i]
                 best_traj_ids.append(best_traj_id)
-                print("Best trajectory under learned reward:", best_traj_id)
+                if args['verbose']:
+                    print("Best trajectory under learned reward:", best_traj_id)
             else:
                 print('highest learned reward trajectory computation not supported for this query type yet.')
 
@@ -579,7 +581,10 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
             # with open(os.path.join(output_dir, 'val_data.pkl'), 'wb') as f:
             #     pickle.dump(val_data, f)
-        return val_data, trajectory_set
+
+        print("Visualizing trajectory that the robot thinks you would like best...")
+        best_traj.visualize()
+        return val_data, trajectory_set, best_traj
     else:
         train_accuracy = num_correct / (num_correct + num_incorrect)
         print("Accuracy of simulated user during active learning:", train_accuracy)
