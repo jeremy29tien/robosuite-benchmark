@@ -280,7 +280,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim)}
         user_model = aprel.SoftmaxUser(params)
         belief = aprel.SamplingBasedBelief(user_model, [], params)
-    print('Estimated user parameters: ' + str(belief.mean))
+    if args['verbose']:
+        print('Estimated user parameters: ' + str(belief.mean))
 
     # Initialize a dummy query so that the query optimizer will generate queries of the same kind
     if args['query_type'] == 'preference':
@@ -364,14 +365,17 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                                                              reduced_size=args['reduced_size_for_batches'],
                                                              gamma=args['dpp_gamma'],
                                                              distance=args['distance_metric_for_batches'])
-        print('Objective Values: ' + str(objective_values))
+        if args['verbose']:
+            print('Objective Values: ' + str(objective_values))
 
         # Ask the query to the human
         responses = true_user.respond(queries)
-        print("Response:", responses[0])
+        if args['verbose']:
+            print("Response:", responses[0])
 
         # Update belief
-        print("Updating belief via sampling...")
+        if args['verbose']:
+            print("Updating belief via sampling...")
         initial_sampling_param = {"weights": [0 for _ in range(features_dim)]}
         if args['query_type'] == 'preference':
             belief.update(aprel.Preference(queries[0], responses[0]), initial_point=initial_sampling_param)
@@ -380,7 +384,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         else:
             raise NotImplementedError('Unknown query type.')
 
-        print('Estimated user parameters: ' + str(belief.mean))
+        if args['verbose']:
+            print('Estimated user parameters: ' + str(belief.mean))
 
         if human_user:
             # 1. Calculate log likelihood of response.
@@ -388,7 +393,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 latest_params = {'weights': belief.mean['weights']}
                 eval_user_model = aprel.SoftmaxUser(latest_params)
                 ll = eval_user_model.loglikelihood(aprel.Preference(queries[0], responses[0]))
-                print("log likelihood:", ll)
+                if args['verbose']:
+                    print("log likelihood:", ll)
                 log_likelihoods.append(ll)
 
             elif args['query_type'] == 'nl_command':
@@ -396,7 +402,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                                  'trajectory_set': trajectory_set}
                 eval_user_model = aprel.SoftmaxUser(latest_params)
                 ll = eval_user_model.loglikelihood(aprel.NLCommand(queries[0], responses[0]))
-                print("log likelihood:", ll)
+                if args['verbose']:
+                    print("log likelihood:", ll)
                 log_likelihoods.append(ll)
             else:
                 print('log likelihood calculation not supported for this query type yet.')
@@ -430,14 +437,15 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                                                                  reduced_size=args['reduced_size_for_batches'],
                                                                  gamma=args['dpp_gamma'],
                                                                  distance=args['distance_metric_for_batches'])
-            print('Objective Values: ' + str(objective_values))
+            if args['verbose']:
+                print('Objective Values: ' + str(objective_values))
 
             # Ask the query to the human
             responses = true_user.respond(queries)
-            print("Response:", responses[0])
+            if args['verbose']:
+                print("Response:", responses[0])
 
             # Not actually updating belief
-            print("Updating belief via sampling...")
             if args['query_type'] == 'preference':
                 data = aprel.Preference(queries[0], responses[0])
             elif args['query_type'] == 'nl_command':
@@ -479,14 +487,16 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 latest_params = {'weights': belief.mean['weights']}
                 eval_user_model = aprel.SoftmaxUser(latest_params)
                 ll = eval_user_model.loglikelihood(aprel.Preference(queries[0], responses[0]))
-                print("log likelihood:", ll)
+                if args['verbose']:
+                    print("log likelihood:", ll)
                 log_likelihoods.append(ll)
             elif args['query_type'] == 'nl_command':
                 latest_params = {'weights': belief.mean['weights'],
                                  'trajectory_set': trajectory_set}
                 eval_user_model = aprel.SoftmaxUser(latest_params)
                 ll = eval_user_model.loglikelihood(aprel.NLCommand(queries[0], responses[0]))
-                print("log likelihood:", ll)
+                if args['verbose']:
+                    print("log likelihood:", ll)
                 log_likelihoods.append(ll)
             else:
                 print('log likelihood calculation not supported for this query type yet.')
@@ -547,7 +557,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 else:
                     print('log likelihood calculation not supported for this query type yet.')
 
-                print("validation log likelihood:", np.mean(val_lls))
+                if args['verbose']:
+                    print("validation log likelihood:", np.mean(val_lls))
                 val_log_likelihoods.append(np.mean(val_lls))
                 val_accuracy = val_num_correct / (val_num_correct + val_num_incorrect)
                 val_accuracies.append(val_accuracy)
@@ -561,7 +572,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             ll = eval_user_model.loglikelihood(data)
             val_lls.append(ll)
 
-        print("validation log likelihood:", np.mean(val_lls))
+        if args['verbose']:
+            print("validation log likelihood:", np.mean(val_lls))
         val_log_likelihoods.append(np.mean(val_lls))
         if output_dir != '':
             np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
@@ -601,6 +613,7 @@ if __name__ == '__main__':
                         help='Gamma parameter for the DPP method: the higher gamma the more important is the acquisition function relative to diversity.')
     parser.add_argument('--normalize_feature_funcs', action="store_true", help='')
     parser.add_argument('--free_input', action="store_true", help='')
+    parser.add_argument('--verbose', action="store_true", help='')
 
 
     args = parser.parse_args()

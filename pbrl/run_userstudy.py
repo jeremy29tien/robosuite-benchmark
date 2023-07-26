@@ -95,6 +95,7 @@ if __name__ == '__main__':
     # parser.add_argument('--normalize_feature_funcs', action="store_true", help='')
     parser.add_argument('--free_input', action="store_true", help='')
     parser.add_argument('--treatment_order', type=str, default='AB')
+    parser.add_argument('--verbose', action="store_true", help='')
 
     args = parser.parse_args()
 
