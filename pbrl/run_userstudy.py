@@ -142,6 +142,11 @@ if __name__ == '__main__':
     # Evaluate Treatment B
     eval_treatment_B()
 
+    selection = None
+    while selection is None:
+        selection = input("One last question! Once you are ready, please type \'yes\' to proceed: ")
+        if selection != 'yes':
+            selection = None
     print("Final Question: Which trajectory is the best?")
     print("Playing trajectory #0")
     nlcommand_best_traj.visualize()
