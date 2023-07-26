@@ -584,7 +584,11 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             # with open(os.path.join(output_dir, 'val_data.pkl'), 'wb') as f:
             #     pickle.dump(val_data, f)
 
-        print("Visualizing trajectory that the robot thinks you would like best...")
+        selection = None
+        while selection is None:
+            selection = input("Visualizing trajectory that the robot thinks you would like best. Type \'yes\' to proceed: ")
+            if selection != 'yes':
+                selection = None
         best_traj.visualize()
         return val_data, trajectory_set, best_traj
     else:
