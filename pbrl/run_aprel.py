@@ -213,7 +213,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     features_dim = len(trajectory_set[0].features)
 
     query_optimizer = aprel.QueryOptimizerDiscreteTrajectorySet(trajectory_set)
-    # TODO: make a val_query_optimizer for human users
+    if human_user and val_trajectory_set is not None:
+        val_query_optimizer = aprel.QueryOptimizerDiscreteTrajectorySet(val_trajectory_set)
 
     # Initialize the object for the true human
     if human_user:
@@ -341,10 +342,11 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     # Perform active learning
     log_likelihoods = []
     val_log_likelihoods = []
-    best_traj_true_rewards = []
     if human_user:
         val_data = []  # This is a list of validation data collected from the human user.
+        best_traj_ids = []
     else:
+        best_traj_true_rewards = []
         num_correct = 0
         num_incorrect = 0
         val_accuracies = []
@@ -398,27 +400,30 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             else:
                 print('log likelihood calculation not supported for this query type yet.')
 
-            # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
+            # 2. Find trajectory with highest return under the learned reward.
             if args['query_type'] == 'preference' or args['query_type'] == 'nl_command':
                 learned_rewards = eval_user_model.reward(eval_user_model.params['trajectory_set'])
                 best_traj_i = int(np.argmax(learned_rewards))
                 best_traj = eval_user_model.params['trajectory_set'][best_traj_i]
-                true_reward = true_user.reward(best_traj)
-                best_traj_true_rewards.append(true_reward)
-                print("True reward of best trajectory under learned reward:", true_reward)
+                best_traj_path = best_traj.clip_path
+                start_i = best_traj_path.rindex('/') + 1
+                end_i = best_traj_path.rindex('.')
+                best_traj_id = best_traj_path[start_i:end_i]
+                best_traj_ids.append(best_traj_id)
+                print("Best trajectory under learned reward:", best_traj_id)
             else:
                 print('highest learned reward trajectory computation not supported for this query type yet.')
 
             if output_dir != '':
                 np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
                 np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
-                np.save(os.path.join(output_dir, 'best_traj_true_rewards.npy'), best_traj_true_rewards)
+                np.save(os.path.join(output_dir, 'best_traj_ids.npy'), best_traj_ids)
 
             # Compute log likelihood on the set of val trajectories.
             print("\n\nIteration " + str(2*query_no + 1) + ":")
             # Optimize the query
             print("Finding optimized query...")
-            queries, objective_values = query_optimizer.optimize('random', belief,
+            queries, objective_values = val_query_optimizer.optimize('random', belief,
                                                                  query, batch_size=args['batch_size'],
                                                                  optimization_method=args['optim_method'],
                                                                  reduced_size=args['reduced_size_for_batches'],
