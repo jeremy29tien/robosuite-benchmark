@@ -404,7 +404,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             if args['query_type'] == 'preference' or args['query_type'] == 'nl_command':
                 learned_rewards = eval_user_model.reward(trajectory_set)
                 best_traj_i = int(np.argmax(learned_rewards))
-                best_traj = eval_user_model.params['trajectory_set'][best_traj_i]
+                best_traj = trajectory_set[best_traj_i]
                 best_traj_path = best_traj.clip_path
                 start_i = best_traj_path.rindex('/') + 1
                 end_i = best_traj_path.rindex('.')
