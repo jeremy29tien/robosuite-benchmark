@@ -2,11 +2,22 @@ from pbrl.run_aprel import run_aprel, make_gym_env
 import aprel
 import numpy as np
 
+import torch
+from nl_traj_feature_learning.learn_features import NLTrajAutoencoder
+from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
+
 import argparse
 import os
 
 
 def treatment_A():
+    selection = None
+    while selection is None:
+        selection = input("Beginning treatment A, where you will be asked to provide feedback to the robot in the "
+                          "form of a command in natural language. Ready? (type \'yes\' to proceed): ")
+        if selection != 'yes':
+            selection = None
+
     args['query_type'] = 'nl_command'
     args['query_size'] = 1
     gym_env = make_gym_env(seed)
@@ -15,6 +26,13 @@ def treatment_A():
 
 
 def treatment_B():
+    selection = None
+    while selection is None:
+        selection = input("Beginning treatment B, where you will be asked to provide feedback to the robot in the "
+                          "form of a pairwise preference. Ready? (type \'yes\' to proceed): ")
+        if selection != 'yes':
+            selection = None
+
     args['query_type'] = 'preference'
     args['query_size'] = 2
     gym_env = make_gym_env(seed)
@@ -38,7 +56,8 @@ def eval_treatment_A():
 
 def eval_treatment_B():
     weights = np.load(os.path.join(preference_output_dir, 'weights.npy'))
-    latest_params = {'weights': weights}
+    latest_params = {'weights': weights,
+                     'trajectory_set': trajectory_set}
     eval_user_model = aprel.SoftmaxUser(latest_params)
 
     val_lls = []
