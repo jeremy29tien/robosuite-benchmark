@@ -16,6 +16,7 @@ from gpu_utils import determine_default_torch_device
 import argparse
 import os
 import json
+import pickle
 
 from bert_preprocessing import preprocess_strings
 
@@ -492,9 +493,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
             # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
             if args['query_type'] == 'preference' or args['query_type'] == 'nl_command':
-                learned_rewards = eval_user_model.reward(eval_user_model.params['trajectory_set'])
+                learned_rewards = eval_user_model.reward(trajectory_set)
                 best_traj_i = int(np.argmax(learned_rewards))
-                best_traj = eval_user_model.params['trajectory_set'][best_traj_i]
+                best_traj = trajectory_set[best_traj_i]
                 true_reward = true_user.reward(best_traj)
                 best_traj_true_rewards.append(true_reward)
                 print("True reward of best trajectory under learned reward:", true_reward)
@@ -564,6 +565,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         val_log_likelihoods.append(np.mean(val_lls))
         if output_dir != '':
             np.save(os.path.join(output_dir, 'val_log_likelihoods.npy'), val_log_likelihoods)
+            # with open(os.path.join(output_dir, 'val_data.pkl'), 'wb') as f:
+            #     pickle.dump(val_data, f)
+        return val_data, trajectory_set
     else:
         train_accuracy = num_correct / (num_correct + num_incorrect)
         print("Accuracy of simulated user during active learning:", train_accuracy)
