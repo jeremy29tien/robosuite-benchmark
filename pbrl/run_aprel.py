@@ -359,7 +359,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         else:
             print("\n\nIteration " + str(query_no) + ":")
         # Optimize the query
-        print("Finding optimized query...")
+        if args['verbose']:
+            print("Finding optimized query...")
         queries, objective_values = query_optimizer.optimize(args['acquisition'], belief,
                                                              query, batch_size=args['batch_size'],
                                                              optimization_method=args['optim_method'],
@@ -432,7 +433,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             # Compute log likelihood on the set of val trajectories.
             print("\n\nIteration " + str(2*query_no + 1) + ":")
             # Optimize the query
-            print("Finding optimized query...")
+            if args['verbose']:
+                print("Finding optimized query...")
             queries, objective_values = val_query_optimizer.optimize('random', belief,
                                                                  query, batch_size=args['batch_size'],
                                                                  optimization_method=args['optim_method'],
