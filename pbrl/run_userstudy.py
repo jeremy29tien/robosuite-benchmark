@@ -9,6 +9,7 @@ from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 import argparse
 import os
 import pickle
+import time
 
 
 def treatment_A():
@@ -194,10 +195,25 @@ if __name__ == '__main__':
         if selection != 'yes':
             selection = None
     print("Final Question: Which trajectory do you like the MOST?")
-    print("Playing trajectory #0")
-    nlcommand_best_traj.visualize()
-    print("Playing trajectory #1")
-    preference_best_traj.visualize()
+
+    replay = None
+    while replay is None:
+        print("Playing trajectory #0")
+        time.sleep(0.5)
+        nlcommand_best_traj.visualize()
+        replay = input('Would you like to replay the trajectory? yes/no: ')
+        if replay == 'yes':
+            replay = None
+
+    replay = None
+    while replay is None:
+        print("Playing trajectory #1")
+        time.sleep(0.5)
+        preference_best_traj.visualize()
+        replay = input('Would you like to replay the trajectory? yes/no: ')
+        if replay == 'yes':
+            replay = None
+
     answer = input("Enter a number: [0-1]: ")
     np.save(os.path.join(user_results_dir, 'final_answer.npy'), answer)
 
