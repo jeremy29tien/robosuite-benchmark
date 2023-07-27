@@ -345,6 +345,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     # Perform active learning
     log_likelihoods = []
     val_log_likelihoods = []
+    weights = []
     if human_user:
         val_data = []  # This is a list of validation data collected from the human user.
         best_traj_ids = []
@@ -426,8 +427,9 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             else:
                 print('highest learned reward trajectory computation not supported for this query type yet.')
 
+            weights.append(belief.mean['weights'])
             if output_dir != '':
-                np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
+                np.save(os.path.join(output_dir, 'weights.npy'), np.asarray(weights))
                 np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
                 np.save(os.path.join(output_dir, 'best_traj_ids.npy'), best_traj_ids)
 
@@ -516,9 +518,10 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 print("True reward of best trajectory under learned reward:", true_reward)
             else:
                 print('highest learned reward trajectory computation not supported for this query type yet.')
-
+            
+            weights.append(belief.mean['weights'])
             if output_dir != '':
-                np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
+                np.save(os.path.join(output_dir, 'weights.npy'), np.asarray(weights))
                 np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
                 np.save(os.path.join(output_dir, 'best_traj_true_rewards.npy'), best_traj_true_rewards)
 
