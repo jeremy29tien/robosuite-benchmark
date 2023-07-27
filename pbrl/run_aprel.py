@@ -329,7 +329,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
             return enc_str
 
-        print("free_input is", args['free_input'])
+        if args['verbose']:
+            print("free_input is", args['free_input'])
         if args['free_input']:
             query = aprel.NLCommandQuery(trajectory_set[:args['query_size']], lang_encoder_func)
         else:
