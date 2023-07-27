@@ -351,6 +351,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     val_log_likelihoods = []
     weights_per_iter = []
     if human_user:
+        train_data = []
         val_data = []  # This is a list of validation data collected from the human user.
         best_traj_ids = []
         best_traj = None
@@ -386,11 +387,15 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             print("Updating belief via sampling...")
         initial_sampling_param = {"weights": [0 for _ in range(features_dim)]}
         if args['query_type'] == 'preference':
-            belief.update(aprel.Preference(queries[0], responses[0]), initial_point=initial_sampling_param)
+            data = aprel.Preference(queries[0], responses[0])
+            belief.update(data, initial_point=initial_sampling_param)
         elif args['query_type'] == 'nl_command':
-            belief.update(aprel.NLCommand(queries[0], responses[0]), initial_point=initial_sampling_param)
+            data = aprel.NLCommand(queries[0], responses[0])
+            belief.update(data, initial_point=initial_sampling_param)
         else:
             raise NotImplementedError('Unknown query type.')
+        if human_user:
+            train_data.append(data)
 
         if args['verbose']:
             print('Estimated user parameters: ' + str(belief.mean))
@@ -524,9 +529,10 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             else:
                 print('highest learned reward trajectory computation not supported for this query type yet.')
 
-            weights.append(belief.mean['weights'])
+            weights_per_iter.append(belief.mean['weights'])
             if output_dir != '':
-                np.save(os.path.join(output_dir, 'weights.npy'), np.asarray(weights))
+                np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
+                np.save(os.path.join(output_dir, 'weights_per_iter.npy'), np.asarray(weights_per_iter))
                 np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
                 np.save(os.path.join(output_dir, 'best_traj_true_rewards.npy'), best_traj_true_rewards)
 
@@ -600,7 +606,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             if selection != 'yes':
                 selection = None
         best_traj.visualize()
-        return val_data, trajectory_set, best_traj
+        return train_data, val_data, trajectory_set, best_traj
     else:
         train_accuracy = num_correct / (num_correct + num_incorrect)
         print("Accuracy of simulated user during active learning:", train_accuracy)

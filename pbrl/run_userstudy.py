@@ -131,20 +131,23 @@ if __name__ == '__main__':
 
     if args['treatment_order'] == 'AB':
         # Treatment A
-        nlcommand_valdata, trajectory_set, nlcommand_best_traj = treatment_A()
+        nlcommand_traindata, nlcommand_valdata, trajectory_set, nlcommand_best_traj = treatment_A()
 
         # Treatment B
-        preference_valdata, _, preference_best_traj = treatment_B()
+        preference_traindata, preference_valdata, _, preference_best_traj = treatment_B()
     else:
         # Treatment B
-        preference_valdata, _, preference_best_traj = treatment_B()
+        preference_traindata, preference_valdata, _, preference_best_traj = treatment_B()
 
         # Treatment A
-        nlcommand_valdata, trajectory_set, nlcommand_best_traj = treatment_A()
+        nlcommand_traindata, nlcommand_valdata, trajectory_set, nlcommand_best_traj = treatment_A()
 
+    train_data = nlcommand_traindata + preference_traindata
     val_data = nlcommand_valdata + preference_valdata
 
-    # Save val_data
+    # Save train_data and val_data
+    with open(os.path.join(user_results_dir, 'train_data.pkl'), 'wb') as f:
+        pickle.dump(train_data, f)
     with open(os.path.join(user_results_dir, 'val_data.pkl'), 'wb') as f:
         pickle.dump(val_data, f)
 
