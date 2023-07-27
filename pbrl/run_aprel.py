@@ -587,7 +587,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
         selection = None
         while selection is None:
-            selection = input("Visualizing trajectory that the robot thinks you would like best. Type \'yes\' to proceed: ")
+            selection = input("Data collection for this section has finished. \nVisualizing trajectory that the robot "
+                              "thinks you would like best. Type \'yes\' to proceed: ")
             if selection != 'yes':
                 selection = None
         best_traj.visualize()

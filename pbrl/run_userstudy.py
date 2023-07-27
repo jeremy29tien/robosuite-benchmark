@@ -13,8 +13,10 @@ import os
 def treatment_A():
     selection = None
     while selection is None:
-        selection = input("Beginning treatment A, where you will be asked to provide feedback to the robot in the "
-                          "form of a command in natural language. Ready? (type \'yes\' to proceed): ")
+        selection = input("\nBeginning treatment A, where you will be asked to provide feedback to the robot in the "
+                          "form of a command in natural language. BEFORE BEGINNING, please check in with investigator "
+                          "to complete previous section's questions, if applicable. AFTER checking in, type \'yes\' to proceed: "
+                          "")
         if selection != 'yes':
             selection = None
 
@@ -28,8 +30,9 @@ def treatment_A():
 def treatment_B():
     selection = None
     while selection is None:
-        selection = input("Beginning treatment B, where you will be asked to provide feedback to the robot in the "
-                          "form of a pairwise preference. Ready? (type \'yes\' to proceed): ")
+        selection = input("\nBeginning treatment B, where you will be asked to provide feedback to the robot in the "
+                          "form of a pairwise preference. BEFORE BEGINNING, please check in with investigator to "
+                          "complete previous section's questions, if applicable. AFTER checking in, type \'yes\' to proceed: ")
         if selection != 'yes':
             selection = None
 
@@ -50,7 +53,7 @@ def eval_treatment_A():
     for data in val_data:
         ll = eval_user_model.loglikelihood(data)
         val_lls.append(ll)
-    print("Treatment A validation log likelihood:", np.mean(val_lls))
+    # print("Treatment A validation log likelihood:", np.mean(val_lls))
     np.save(os.path.join(nlcommand_output_dir, 'user_study_val_log_likelihood.npy'), np.mean(val_lls))
 
 
@@ -64,7 +67,7 @@ def eval_treatment_B():
     for data in val_data:
         ll = eval_user_model.loglikelihood(data)
         val_lls.append(ll)
-    print("Treatment B validation log likelihood:", np.mean(val_lls))
+    # print("Treatment B validation log likelihood:", np.mean(val_lls))
     np.save(os.path.join(preference_output_dir, 'user_study_val_log_likelihood.npy'), np.mean(val_lls))
 
 
@@ -144,10 +147,12 @@ if __name__ == '__main__':
 
     selection = None
     while selection is None:
-        selection = input("One last question! Once you are ready, please type \'yes\' to proceed: ")
+        selection = input("One last question! You will be asked to select which of the following trajectories you "
+                          "MOST prefer. BEFORE BEGINNING, please check in with investigator to complete previous "
+                          "section's questions. AFTER checking in, please type \'yes\' to proceed: ")
         if selection != 'yes':
             selection = None
-    print("Final Question: Which trajectory is the best?")
+    print("Final Question: Which trajectory do you like the MOST?")
     print("Playing trajectory #0")
     nlcommand_best_traj.visualize()
     print("Playing trajectory #1")
