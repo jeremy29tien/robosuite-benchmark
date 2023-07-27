@@ -8,6 +8,7 @@ from nl_traj_feature_learning.nl_traj_dataset import NLTrajComparisonDataset
 
 import argparse
 import os
+import pickle
 
 
 def treatment_A():
@@ -44,31 +45,35 @@ def treatment_B():
 
 
 def eval_treatment_A():
-    weights = np.load(os.path.join(nlcommand_output_dir, 'weights.npy'))
-    latest_params = {'weights': weights,
-                     'trajectory_set': trajectory_set}
-    eval_user_model = aprel.SoftmaxUser(latest_params)
+    weights_per_iter = np.load(os.path.join(nlcommand_output_dir, 'weights_per_iter.npy'))
+    val_lls_per_iter = []
+    for weights in weights_per_iter:
+        latest_params = {'weights': weights,
+                         'trajectory_set': trajectory_set}
+        eval_user_model = aprel.SoftmaxUser(latest_params)
 
-    val_lls = []
-    for data in val_data:
-        ll = eval_user_model.loglikelihood(data)
-        val_lls.append(ll)
-    # print("Treatment A validation log likelihood:", np.mean(val_lls))
-    np.save(os.path.join(nlcommand_output_dir, 'user_study_val_log_likelihood.npy'), np.mean(val_lls))
+        val_lls = []
+        for data in val_data:
+            ll = eval_user_model.loglikelihood(data)
+            val_lls.append(ll)
+        val_lls_per_iter.append(np.mean(val_lls))
+        np.save(os.path.join(nlcommand_output_dir, 'user_study_val_log_likelihoods.npy'), val_lls_per_iter)
 
 
 def eval_treatment_B():
-    weights = np.load(os.path.join(preference_output_dir, 'weights.npy'))
-    latest_params = {'weights': weights,
-                     'trajectory_set': trajectory_set}
-    eval_user_model = aprel.SoftmaxUser(latest_params)
+    weights_per_iter = np.load(os.path.join(preference_output_dir, 'weights_per_iter.npy'))
+    val_lls_per_iter = []
+    for weights in weights_per_iter:
+        latest_params = {'weights': weights,
+                         'trajectory_set': trajectory_set}
+        eval_user_model = aprel.SoftmaxUser(latest_params)
 
-    val_lls = []
-    for data in val_data:
-        ll = eval_user_model.loglikelihood(data)
-        val_lls.append(ll)
-    # print("Treatment B validation log likelihood:", np.mean(val_lls))
-    np.save(os.path.join(preference_output_dir, 'user_study_val_log_likelihood.npy'), np.mean(val_lls))
+        val_lls = []
+        for data in val_data:
+            ll = eval_user_model.loglikelihood(data)
+            val_lls.append(ll)
+        val_lls_per_iter.append(np.mean(val_lls))
+        np.save(os.path.join(preference_output_dir, 'user_study_val_log_likelihoods.npy'), val_lls_per_iter)
 
 
 if __name__ == '__main__':
@@ -138,6 +143,39 @@ if __name__ == '__main__':
         nlcommand_valdata, trajectory_set, nlcommand_best_traj = treatment_A()
 
     val_data = nlcommand_valdata + preference_valdata
+
+    # Save val_data
+    with open(os.path.join(user_results_dir, 'val_data.pkl'), 'wb') as f:
+        pickle.dump(val_data, f)
+
+    # queries = []
+    # responses = []
+    # for data in val_data:
+    #     if isinstance(data, aprel.Preference):
+    #         path = data.query.slate[0].clip_path
+    #         start_i = path.rindex('/') + 1
+    #         end_i = path.rindex('.')
+    #         traj0_id = int(path[start_i:end_i])
+    #
+    #         path = data.query.slate[1].clip_path
+    #         start_i = path.rindex('/') + 1
+    #         end_i = path.rindex('.')
+    #         traj1_id = int(path[start_i:end_i])
+    #
+    #         queries.append([traj0_id, traj1_id])
+    #
+    #         responses.append(data.response)
+    #     elif isinstance(data, aprel.NLCommand):
+    #         path = data.query.slate[0].clip_path
+    #         start_i = path.rindex('/') + 1
+    #         end_i = path.rindex('.')
+    #         traj0_id = int(path[start_i:end_i])
+    #
+    #         queries.append([traj0_id])
+    #
+    #         responses.append(data.response)
+    #     else:
+    #         raise ValueError("Unrecognized input type.")
 
     # Evaluate Treatment A
     eval_treatment_A()

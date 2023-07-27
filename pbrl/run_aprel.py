@@ -36,6 +36,8 @@ DISTANCE_TO_CUBE_STD = None
 ENCODED_TRAJECTORIES_MEAN = None
 ENCODED_TRAJECTORIES_STD = None
 
+lang_encoder_func = None
+
 
 def calc_and_set_global_vars(trajs, model, device):
     horizon = len(trajs[0])
@@ -301,6 +303,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         assert len(nl_comps) == len(nl_embeddings)
 
         global lang_encoder_func
+
         def lang_encoder_func(in_str: str) -> np.array:
             """Returns encoded version of in_str, i.e. \Phi(in_str).
 
