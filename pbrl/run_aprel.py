@@ -300,6 +300,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             nl_embeddings = preprocess_strings('', 500, nl_comps)
         assert len(nl_comps) == len(nl_embeddings)
 
+        global lang_encoder_func
         def lang_encoder_func(in_str: str) -> np.array:
             """Returns encoded version of in_str, i.e. \Phi(in_str).
 
@@ -345,7 +346,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     # Perform active learning
     log_likelihoods = []
     val_log_likelihoods = []
-    weights = []
+    weights_per_iter = []
     if human_user:
         val_data = []  # This is a list of validation data collected from the human user.
         best_traj_ids = []
@@ -427,9 +428,10 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             else:
                 print('highest learned reward trajectory computation not supported for this query type yet.')
 
-            weights.append(belief.mean['weights'])
+            weights_per_iter.append(belief.mean['weights'])
             if output_dir != '':
-                np.save(os.path.join(output_dir, 'weights.npy'), np.asarray(weights))
+                np.save(os.path.join(output_dir, 'weights.npy'), belief.mean['weights'])
+                np.save(os.path.join(output_dir, 'weights_per_iter.npy'), np.asarray(weights_per_iter))
                 np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
                 np.save(os.path.join(output_dir, 'best_traj_ids.npy'), best_traj_ids)
 
@@ -518,7 +520,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 print("True reward of best trajectory under learned reward:", true_reward)
             else:
                 print('highest learned reward trajectory computation not supported for this query type yet.')
-            
+
             weights.append(belief.mean['weights'])
             if output_dir != '':
                 np.save(os.path.join(output_dir, 'weights.npy'), np.asarray(weights))
