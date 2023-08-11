@@ -39,6 +39,10 @@ ENCODED_TRAJECTORIES_STD = None
 lang_encoder_func = None
 
 
+def cosine_similarity(a, b):
+    return np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b))
+
+
 def calc_and_set_global_vars(trajs, model, device):
     horizon = len(trajs[0])
     avg_gt_rewards = []
@@ -351,6 +355,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     log_likelihoods = []
     val_log_likelihoods = []
     weights_per_iter = []
+    if args['no_reward_updates']:
+        language_corrections = []
     if human_user:
         train_data = []
         val_data = []  # This is a list of validation data collected from the human user.
@@ -370,7 +376,6 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         if args['verbose']:
             print("Finding optimized query...")
 
-        # TODO (1): write an acquisition function that finds the trajectory that has the highest reward (belief.mean)
         queries, objective_values = query_optimizer.optimize(args['acquisition'], belief,
                                                              query, batch_size=args['batch_size'],
                                                              optimization_method=args['optim_method'],
@@ -380,32 +385,58 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         if args['verbose']:
             print('Objective Values: ' + str(objective_values))
 
-        # TODO (2): add a special case where we apply language corrections to query reference trajectory
+        # Add a special case where we apply language corrections to query reference trajectory -- DONE
+        encoded_ref_traj = None
+        if args['no_reward_updates'] and language_corrections:
+            print("Not updating reward. Instead, applying language correction directly.")
+            encoded_ref_traj = queries[0].slate[0].features
+            total_language_correction = np.zeros(encoded_ref_traj.shape)
+            for corr in language_corrections:
+                total_language_correction += corr
+
+            max_sim_metric = -1
+            corrected_traj = None
+
+            with torch.no_grad():
+                for candidate_traj in trajectory_set:
+                    encoded_candidate_traj = candidate_traj.features
+                    cos_similarity = cosine_similarity(total_language_correction, encoded_candidate_traj - encoded_ref_traj).item()
+                    if cos_similarity > max_sim_metric:
+                        max_sim_metric = cos_similarity
+                        corrected_traj = candidate_traj
+
+            # Update the query
+            queries[0].slate = [corrected_traj]
+            print("total_language_correction:", total_language_correction)
+            print("corrected_traj:", corrected_traj.clip_path)
 
         # Ask the query to the human
         responses = true_user.respond(queries)
         if args['verbose']:
             print("Response:", responses[0])
 
-        # Update belief
-        if args['verbose']:
-            print("Updating belief via sampling...")
-        initial_sampling_param = {"weights": [0 for _ in range(features_dim)]}
-        if args['query_type'] == 'preference':
-            data = aprel.Preference(queries[0], responses[0])
-            belief.update(data, initial_point=initial_sampling_param)
-        elif args['query_type'] == 'nl_command':
-            # TODO (3): add a case where we don't update the reward belief
-            data = aprel.NLCommand(queries[0], responses[0])
-            belief.update(data, initial_point=initial_sampling_param)
+        if args['no_reward_updates']:
+            language_corrections.append(responses[0])
         else:
-            raise NotImplementedError('Unknown query type.')
-        if human_user:
-            train_data.append(data)
+            # Update belief
+            if args['verbose']:
+                print("Updating belief via sampling...")
+            initial_sampling_param = {"weights": [0 for _ in range(features_dim)]}
+            if args['query_type'] == 'preference':
+                data = aprel.Preference(queries[0], responses[0])
+                belief.update(data, initial_point=initial_sampling_param)
+            elif args['query_type'] == 'nl_command':
+                data = aprel.NLCommand(queries[0], responses[0])
+                belief.update(data, initial_point=initial_sampling_param)
+            else:
+                raise NotImplementedError('Unknown query type.')
+            if human_user:
+                train_data.append(data)
 
         if args['verbose']:
             print('Estimated user parameters: ' + str(belief.mean))
 
+        # TODO (future): unify this human_user case with the corresponding else case; LOTs of repeated code.
         if human_user:
             # 1. Calculate log likelihood of response.
             if args['query_type'] == 'preference':
@@ -449,6 +480,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 np.save(os.path.join(output_dir, 'log_likelihoods.npy'), log_likelihoods)
                 np.save(os.path.join(output_dir, 'best_traj_ids.npy'), best_traj_ids)
 
+            # if False:
             # Compute log likelihood on the set of val trajectories.
             print("\n\nIteration " + str(2*query_no + 1) + ":")
             # Optimize the query
@@ -477,6 +509,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 raise NotImplementedError('Unknown query type.')
             val_data.append(data)
             # print('Estimated user parameters: ' + str(belief.mean))
+            # endif False
 
         else:
             if args['query_type'] == 'preference':
@@ -513,8 +546,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                 if args['verbose']:
                     print("log likelihood:", ll)
                 log_likelihoods.append(ll)
-            elif args['query_type'] == 'nl_command':
-                # TODO (4): add a case where we probably don't need to do this since the weights aren't every updated.
+            elif args['query_type'] == 'nl_command' and not args['no_reward_updates']:
                 latest_params = {'weights': belief.mean['weights'],
                                  'trajectory_set': trajectory_set}
                 eval_user_model = aprel.SoftmaxUser(latest_params)
@@ -527,10 +559,28 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
             # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
             if args['query_type'] == 'preference' or args['query_type'] == 'nl_command':
-                learned_rewards = eval_user_model.reward(trajectory_set)
-                # TODO (5): add handling for adding accumulated language corrections first, then calculating reward
-                best_traj_i = int(np.argmax(learned_rewards))
-                best_traj = trajectory_set[best_traj_i]
+                # Add handling for adding accumulated language corrections first, then calculating reward
+                if args['no_reward_updates']:
+                    if encoded_ref_traj is None:
+                        encoded_ref_traj = queries[0].slate[0].features
+                    total_language_correction = np.zeros(encoded_ref_traj.shape)
+                    for corr in language_corrections:
+                        total_language_correction += corr
+
+                    max_sim_metric = -1
+                    best_traj = None
+                    with torch.no_grad():
+                        for candidate_traj in trajectory_set:
+                            encoded_candidate_traj = candidate_traj.features
+                            cos_similarity = cosine_similarity(total_language_correction,
+                                                               encoded_candidate_traj - encoded_ref_traj).item()
+                            if cos_similarity > max_sim_metric:
+                                max_sim_metric = cos_similarity
+                                best_traj = candidate_traj
+                else:
+                    learned_rewards = eval_user_model.reward(trajectory_set)
+                    best_traj_i = int(np.argmax(learned_rewards))
+                    best_traj = trajectory_set[best_traj_i]
                 true_reward = true_user.reward(best_traj)
                 best_traj_true_rewards.append(true_reward)
                 print("True reward of best trajectory under learned reward:", true_reward)
@@ -546,7 +596,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
 
             # Compute log likelihood on the set of val trajectories.
             # if args['query_type'] in ['preference', 'nl_command']:
-            if val_trajectory_set is not None:
+            if val_trajectory_set is not None and not args['no_reward_updates']:
                 val_lls = []
                 val_num_correct = 0
                 val_num_incorrect = 0
@@ -648,6 +698,7 @@ if __name__ == '__main__':
                         help='Gamma parameter for the DPP method: the higher gamma the more important is the acquisition function relative to diversity.')
     parser.add_argument('--normalize_feature_funcs', action="store_true", help='')
     parser.add_argument('--free_input', action="store_true", help='')
+    parser.add_argument('--no_reward_updates', action="store_true", help='')
     parser.add_argument('--verbose', action="store_true", help='')
 
 
