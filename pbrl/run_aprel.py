@@ -273,6 +273,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
     # Create the human response model and initialize the belief distribution
     if args['query_type'] == 'nl_command':
         # NLCommandQuery requires the trajectory_set as one of the params
+        # TODO: this is the 'incorrect' weights vector that we start off with
         params = {'weights': aprel.util_funs.get_random_normalized_vector(features_dim),
                   'trajectory_set': trajectory_set}
         user_model = aprel.SoftmaxUser(params)
@@ -368,6 +369,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
         # Optimize the query
         if args['verbose']:
             print("Finding optimized query...")
+
+        # TODO (1): write an acquisition function that finds the trajectory that has the highest reward (belief.mean)
         queries, objective_values = query_optimizer.optimize(args['acquisition'], belief,
                                                              query, batch_size=args['batch_size'],
                                                              optimization_method=args['optim_method'],
@@ -376,6 +379,8 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                                                              distance=args['distance_metric_for_batches'])
         if args['verbose']:
             print('Objective Values: ' + str(objective_values))
+
+        # TODO (2): add a special case where we apply language corrections to query reference trajectory
 
         # Ask the query to the human
         responses = true_user.respond(queries)
@@ -390,6 +395,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             data = aprel.Preference(queries[0], responses[0])
             belief.update(data, initial_point=initial_sampling_param)
         elif args['query_type'] == 'nl_command':
+            # TODO (3): add a case where we don't update the reward belief
             data = aprel.NLCommand(queries[0], responses[0])
             belief.update(data, initial_point=initial_sampling_param)
         else:
@@ -508,6 +514,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
                     print("log likelihood:", ll)
                 log_likelihoods.append(ll)
             elif args['query_type'] == 'nl_command':
+                # TODO (4): add a case where we probably don't need to do this since the weights aren't every updated.
                 latest_params = {'weights': belief.mean['weights'],
                                  'trajectory_set': trajectory_set}
                 eval_user_model = aprel.SoftmaxUser(latest_params)
@@ -521,6 +528,7 @@ def run_aprel(seed, gym_env, model_path, human_user, traj_dir='', video_dir='', 
             # 2. Find trajectory with highest return under the learned reward, and calculate the true reward.
             if args['query_type'] == 'preference' or args['query_type'] == 'nl_command':
                 learned_rewards = eval_user_model.reward(trajectory_set)
+                # TODO (5): add handling for adding accumulated language corrections first, then calculating reward
                 best_traj_i = int(np.argmax(learned_rewards))
                 best_traj = trajectory_set[best_traj_i]
                 true_reward = true_user.reward(best_traj)
