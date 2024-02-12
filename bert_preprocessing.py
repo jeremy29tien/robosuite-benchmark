@@ -9,7 +9,7 @@ def preprocess_strings(nlcomp_dir, batch_size, nlcomp_list=None, id_mapping=Fals
     if nlcomp_list is None:
         assert nlcomp_dir != ''
         # nlcomp_file is a json file with the list of comparisons in NL.
-        nlcomp_file = os.path.join(nlcomp_dir, 'nlcomps.json')
+        nlcomp_file = os.path.join(nlcomp_dir, 'unique_nlcomps_for_aprel.json')
 
         with open(nlcomp_file, 'rb') as f:
             nlcomps = json.load(f)
@@ -56,7 +56,7 @@ def preprocess_strings(nlcomp_dir, batch_size, nlcomp_list=None, id_mapping=Fals
         if id_mapping:
             outfile = os.path.join(nlcomp_dir, 'unique_nlcomps.npy')
         else:
-            outfile = os.path.join(nlcomp_dir, 'nlcomps.npy')
+            outfile = os.path.join(nlcomp_dir, 'unique_nlcomps_for_aprel.npy')
         if save:
             np.save(outfile, np.asarray(bert_output_embeddings))
     return np.asarray(bert_output_embeddings)
